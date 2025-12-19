@@ -15,3 +15,4 @@ bandit
 tlsh
 psutil
 psycopg2-binary
+pytest-cov

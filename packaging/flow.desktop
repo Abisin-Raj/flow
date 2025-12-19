@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Name=Flow
+Comment=Network Security Monitor
+Exec=/usr/local/bin/flow
+Icon=/usr/share/pixmaps/flow.png
+Terminal=false
+Type=Application
+Categories=Network;Security;

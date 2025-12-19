@@ -1,0 +1,32 @@
+[Unit]
+Description=Flow Network Monitor Firewall Helper
+Documentation=https://github.com/abisinraj/flow
+After=network.target nftables.service
+Wants=nftables.service
+
+[Service]
+Type=simple
+RuntimeDirectory=flow
+RuntimeDirectoryMode=0770
+ExecStart=/usr/bin/flow-firewall-helper
+Restart=always
+RestartSec=5
+User=root
+Group=flow
+UMask=007
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# RuntimeDirectory automatically implies ReadWritePaths for /run/flow
+# ReadWritePaths=/run/flow
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=flow-firewall
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+[
+  {"range": "35.192.0.0/12", "tag": "cloud:google"},
+  {"range": "34.192.0.0/12", "tag": "cloud:google"},
+  {"range": "52.0.0.0/8", "tag": "cloud:aws"},
+  {"range": "13.0.0.0/8", "tag": "cloud:aws"},
+  {"range": "3.0.0.0/8", "tag": "cloud:aws"},
+  {"range": "203.0.113.0/24", "tag": "test:example"},
+  {"range": "198.51.100.0/24", "tag": "test:example"}
+]

@@ -1,0 +1,17 @@
+Django==5.1.3
+PyQt6==6.8.0
+geoip2
+maxminddb
+scapy
+matplotlib
+requests
+python-dotenv
+pytest
+coverage
+ruff
+mypy
+types-requests
+bandit
+tlsh
+psutil
+psycopg2-binary

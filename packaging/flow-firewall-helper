@@ -1,0 +1,5 @@
+#!/bin/bash
+# Wrapper script for Flow Firewall Helper service
+# This allows the systemd service to easily launch the Python helper
+
+exec /usr/bin/python3 /opt/flow-helper/firewall_helper.py

@@ -1,0 +1,14 @@
+[Unit]
+Description=Flow Network Monitor
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/opt/flow/venv/bin/python3 /opt/flow/desktop_front/start_flow.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

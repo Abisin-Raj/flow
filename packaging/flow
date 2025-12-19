@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# /usr/local/bin/flow
+# Launcher for Flow. Runs as root via sudo and preserves user DBUS session.
+
+APP_PY="/opt/flow/desktop_front/start_flow.py"
+PY_BIN="/opt/flow/venv/bin/python3"
+
+# fallback DBUS address based on invoking user
+USER_UID=$(id -u)
+DBUS_ADDR="unix:path=/run/user/${USER_UID}/bus"
+
+# ensure DBUS var exists for the command we run as root
+export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-$DBUS_ADDR}"
+
+if [ "$EUID" -ne 0 ]; then
+    echo "Flow launcher: requesting root to enable full features"
+    
+    # Check if we are in a terminal (TTY)
+    if [ -t 0 ]; then
+        # Terminal: Use sudo (preserves env with -E is risky but we pass specific vars manually usually)
+        # We stick to the explicit pass style
+        exec sudo DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" "$PY_BIN" "$APP_PY"
+    else
+        # GUI (Icon/Menu): Use pkexec
+        # We use /usr/bin/env to set the variables inside the root session
+        exec pkexec /usr/bin/env DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" "$PY_BIN" "$APP_PY"
+    fi
+else
+    exec "$PY_BIN" "$APP_PY"
+fi

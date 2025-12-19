@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-shm
+db.sqlite3-wal
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+
+# Project specific
+.network_monitor_logs/
+labs/offensive_tests/
+rare_port_test.log
+
+# Caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# temporary output
+verify_*.csv
+test_*.txt
+project_structure.txt
+changes.txt
+update.txt
+debug_output.txt
+git_log.txt
+
+# --- User requested ignores ---
+
+# Tests (local only)
+test_auto_mitigation.py
+test_dns_tunneling.py
+test_manual_v2.py
+
+# Scripts (local tools)
+simulate_all_threats.py
+dns-ex.py
+check_*.py
+network_check.sh
+
+# Data & Binary Artifacts
+*.rpm
+build/
+dist/
+
+# Documentation
+doc1.txt
+
+# Secrets
+secrets/

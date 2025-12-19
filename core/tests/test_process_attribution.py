@@ -1,7 +1,6 @@
 """
 Unit tests for process attribution and whitelisting functionality.
 """
-import os
 import pytest
 import unittest
 from unittest.mock import patch, mock_open, MagicMock

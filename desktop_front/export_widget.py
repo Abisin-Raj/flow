@@ -7,10 +7,8 @@ from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QPushButton,
     QLabel,
     QMessageBox,
-    QSizePolicy,
 )
 
 from desktop_front.ui_helpers import make_small_button

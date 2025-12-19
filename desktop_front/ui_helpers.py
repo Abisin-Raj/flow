@@ -2,7 +2,6 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QHeaderView,
-    QAbstractScrollArea,
 )
 
 def make_small_button(text: str) -> QPushButton:

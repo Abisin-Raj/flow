@@ -7,13 +7,10 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QMessageBox,
     QApplication,
-    QHeaderView,
-    QAbstractScrollArea,
 )
 from desktop_front.ui_helpers import make_small_button, tune_table
 from desktop_front.ui_utils import TableColumnManager

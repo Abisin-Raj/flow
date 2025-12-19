@@ -12,10 +12,7 @@ import signal
 import subprocess
 import ipaddress
 import re
-import time
-import threading
 from pathlib import Path
-from datetime import datetime, timedelta
 
 # Configuration
 SOCKET_PATH = "/run/flow/firewall.sock"
@@ -45,7 +42,8 @@ class FirewallHelper:
     
     def setup_nftables(self):
         """Initialize nftables table and sets if not exists via atomic file load"""
-        NFT_CONFIG = f"""
+        # nftables config creation - removed unused variable assignment
+        nft_config = f"""
 table inet {NFT_TABLE} {{
     set flow_blocked_ipv4 {{
         type ipv4_addr
@@ -132,9 +130,10 @@ table inet {NFT_TABLE} {{
         if timeout_seconds:
             try:
                 ts = int(timeout_seconds)
-                if ts <= 0: return "ERROR Invalid timeout"
+                if ts <= 0:
+                    return "ERROR Invalid timeout"
                 timeout_str = f" timeout {ts}s"
-            except:
+            except Exception:
                 return "ERROR Invalid timeout"
 
         target_set = "flow_blocked_ipv4" if ip_obj.version == 4 else "flow_blocked_ipv6"
@@ -274,8 +273,8 @@ table inet {NFT_TABLE} {{
         except Exception as e:
             logger.error(f"Error handling client: {e}")
             try:
-                client_socket.sendall(f"ERROR Internal error\n".encode('utf-8'))
-            except:
+                client_socket.sendall("ERROR Internal error\n".encode('utf-8'))
+            except Exception:
                 pass
         finally:
             client_socket.close()

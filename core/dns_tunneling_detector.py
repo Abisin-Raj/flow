@@ -2,7 +2,7 @@ import time
 import statistics
 import logging
 from collections import deque, defaultdict
-from typing import Optional, List, Tuple
+from typing import Optional
 
 log = logging.getLogger(__name__)
 

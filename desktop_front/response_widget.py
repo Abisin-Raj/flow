@@ -21,7 +21,6 @@ from PyQt6.QtWidgets import (
     QDialogButtonBox
 )
 from PyQt6.QtCore import QTimer, Qt
-from PyQt6.QtGui import QColor
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
@@ -320,7 +319,6 @@ class ResponseWidget(QWidget):
             self.refresh_firewall_data()
             return
 
-        import subprocess
         
         try:
             cmd = ["pkexec", "systemctl", "start", "flow-firewall.service"]

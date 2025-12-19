@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
 )
 
 import logging
-from django.db import DatabaseError, close_old_connections
+from django.db import DatabaseError
 from django.db.models import Q
 
 from core.models import Connection, Alert

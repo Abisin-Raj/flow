@@ -7,15 +7,13 @@ from PyQt6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QHeaderView,
-    QAbstractScrollArea,
 )
 
 from desktop_front.ui_helpers import tune_table
 
 from django.utils import timezone
-from django.db.models import Prefetch
 
-from core.models import Alert, Connection, QuarantinedFile
+from core.models import Alert, QuarantinedFile
 from core.process_tree import build_process_chain
 
 

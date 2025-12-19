@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import List
 
 from core.models import Alert
-from core import settings_api
 
 log = logging.getLogger("core.mitigation_engine")
 
@@ -26,7 +25,7 @@ def suggest_actions_for_alert(alert: Alert) -> List[MitigationAction]:
 
     src_ip = getattr(alert, "src_ip", None)
     dst_ip = getattr(alert, "dst_ip", None)
-    severity = (getattr(alert, "severity", "") or "").lower()
+    # severity = (getattr(alert, "severity", "") or "").lower() # Unused
     a_type = (getattr(alert, "alert_type", "") or "").lower()
     msg = (getattr(alert, "message", "") or "").lower()
 

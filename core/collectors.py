@@ -6,7 +6,7 @@ import ipaddress
 from datetime import timedelta
 
 from django.utils import timezone
-from django.db import close_old_connections, OperationalError, transaction
+from django.db import close_old_connections, transaction
 
 from core.models import Connection
 from core.alert_engine import create_alert_for_connection

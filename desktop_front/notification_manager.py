@@ -1,6 +1,5 @@
 # desktop_front/notification_manager.py
 import os
-import pwd
 import logging
 import subprocess
 from PyQt6.QtWidgets import QSystemTrayIcon

@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from PyQt6.QtCore import QTimer
-from PyQt6.QtGui import QColor, QBrush, QIcon
+from PyQt6.QtGui import QColor, QBrush
 from PyQt6.QtWidgets import (
     QWidget,
     QLineEdit,
@@ -12,16 +12,12 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QTableWidget,
     QTableWidgetItem,
-    QPushButton,
     QMessageBox,
     QApplication,
-    QHeaderView,
-    QAbstractScrollArea,
 )
 from PyQt6.QtCore import pyqtSignal, Qt
 
 from desktop_front.ui_helpers import make_small_button, tune_table
-from desktop_front.icon_cache import get_icon_for_process
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:

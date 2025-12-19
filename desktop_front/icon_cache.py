@@ -1,6 +1,5 @@
 # desktop_front/icon_cache.py
 import os
-import glob
 from pathlib import Path
 from functools import lru_cache
 from configparser import ConfigParser
@@ -40,7 +39,7 @@ def _get_icon_from_desktop_file(base_name: str) -> str | None:
     # Process the first valid candidate
     for desktop_file in candidate_files:
         try:
-            cfg = ConfigParser(interpolation=None)
+            # cfg = ConfigParser(interpolation=None) # Unused
             # .desktop files are INI-like but often have no section headers or start with [Desktop Entry]
             # Since ConfigParser requires sections, we'll manually grep it to be safer and faster
             with open(desktop_file, 'r', errors='ignore') as f:

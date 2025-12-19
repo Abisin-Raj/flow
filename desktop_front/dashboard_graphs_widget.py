@@ -22,7 +22,7 @@ if str(BASE_DIR) not in sys.path:
 # django setup removed (handled by main entry point)
 
 from django.utils import timezone  # noqa: E402
-from django.db import DatabaseError, close_old_connections # noqa: E402
+from django.db import DatabaseError # noqa: E402
 from django.db.models import Count # noqa: E402
 from django.db.models.functions import TruncMinute # noqa: E402
 from core.models import Connection, Alert  # noqa: E402

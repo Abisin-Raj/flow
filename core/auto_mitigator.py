@@ -2,11 +2,9 @@ import logging
 import ipaddress
 from datetime import timedelta
 from django.utils import timezone
-from django.db.models import Count
 
-from core.models import Alert, BlockedIp, AppSetting
+from core.models import Alert, BlockedIp
 from core import settings_api
-from core import mitigation_engine
 from core import firewall
 
 log = logging.getLogger("core.auto_mitigator")

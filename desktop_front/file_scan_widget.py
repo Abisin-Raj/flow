@@ -6,7 +6,6 @@ from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QPushButton,
     QLabel,
     QTableWidget,
     QTableWidgetItem,
@@ -14,8 +13,6 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QApplication,
     QCheckBox,
-    QHeaderView,
-    QAbstractScrollArea,
 )
 
 from desktop_front.ui_helpers import make_small_button, tune_table

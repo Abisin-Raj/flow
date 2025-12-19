@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from django.utils.timezone import localtime
 from PyQt6.QtCore import Qt, QTimer, QThread, QObject, pyqtSignal, pyqtSlot
-from PyQt6.QtGui import QColor, QBrush, QIcon
+from PyQt6.QtGui import QColor, QBrush
 from PyQt6.QtWidgets import (
     QApplication,
     QWidget,
@@ -9,18 +9,15 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QPushButton,
     QTableWidget,
     QTableWidgetItem,
     QHeaderView,
     QStyledItemDelegate,
     QStyle,
-    QAbstractScrollArea,
     QComboBox,  # Added for status filter
 )
 
-from desktop_front.ui_helpers import make_small_button, tune_table
-from desktop_front.icon_cache import get_icon_for_process
+from desktop_front.ui_helpers import make_small_button
 
 from django.db import DatabaseError, connections
 
@@ -67,7 +64,7 @@ class ConnectionsWorker(QObject):
 
     @pyqtSlot(int, str, str, str)
     def refresh(self, limit, ip_filter, port_filter, status_filter=""):
-        from django.db import connection, connections
+        from django.db import connection
         try:
             # Force close potentially old/stale connection for this thread
             connection.close()
@@ -291,7 +288,7 @@ class ConnectionsWidget(QWidget):
         for row_idx, conn_dict in enumerate(rows):
             try:
                 self._set_row(row_idx, conn_dict)
-            except Exception as e:
+            except Exception:
                 import traceback
                 traceback.print_exc()
 

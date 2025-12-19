@@ -131,10 +131,6 @@ systemctl daemon-reload
 systemctl enable flow-firewall.service
 systemctl restart flow-firewall.service
 
-# 12. Install utility scripts
-echo "Installing utility scripts"
-cp "$INSTALL_DIR/reset_columns.py" /usr/local/bin/flow-reset-columns
-chmod +x /usr/local/bin/flow-reset-columns
 
 echo ""
 echo "=========================================="
@@ -145,14 +141,12 @@ echo "✓ Flow UI launcher: /usr/local/bin/flow"
 echo "✓ Desktop entry: /usr/share/applications/flow.desktop"
 echo "✓ Application icon: /usr/share/pixmaps/flow.png"
 echo "✓ Firewall helper service: flow-firewall.service"
-echo "✓ Utility: flow-reset-columns (fixes stuck table columns)"
 echo ""
 echo "IMPORTANT: Add users to the 'flow' group:"
 echo "  sudo usermod -aG flow <username>"
 echo "  (Users must log out and back in for group changes)"
 echo ""
 echo "Troubleshooting:"
-echo "  - Columns stuck? Run: flow-reset-columns"
 echo "  - Check firewall: systemctl status flow-firewall.service"
 echo ""
 echo "Launch Flow via the application menu or run: flow"

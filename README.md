@@ -188,21 +188,6 @@ Run unit tests.
 pytest -q
 ```
 
-Run file scanner smoke test.
-
-```bash
-python simulate_file_scan.py
-```
-
-You should see a clean file reported as safe and the EICAR test file reported as malicious and quarantined.
-
-Run system verification.
-
-```bash
-python verify_system.py
-```
-
-This script exercises detectors and exports. It is meant for development, not for regular users.
 
 ## KNOWN LIMITATIONS
 

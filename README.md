@@ -110,24 +110,12 @@ flow
 
 ### Development Mode (Without RPM)
 
-During development, you have two options:
+To run the application from source with full privileges (needed for packet sniffing):
 
-**Option 1: Run with sudo** (simplest)
 ```bash
 sudo python desktop_front/start_flow.py
 ```
 
-**Option 2: Build and apply capabilities** (recommended for testing)
-```bash
-# Build the frozen binary
-./build_binary.sh
-
-# Apply capabilities
-sudo setcap cap_net_raw,cap_net_admin+ep ./dist/flow
-
-# Run without sudo
-./dist/flow
-```
 
 ### Important Notes
 

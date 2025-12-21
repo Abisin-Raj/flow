@@ -1,3 +1,11 @@
+"""
+Firewall Client Module.
+
+This module provides a client interface to interact with the privileged firewall helper.
+It communicates via a Unix domain socket to request IP blocking/unblocking and status checks.
+It implements exponential backoff for resilience.
+"""
+
 import socket
 import logging
 import os
@@ -7,10 +15,11 @@ from functools import wraps
 
 log = logging.getLogger("core.firewall")
 
-# Socket configuration
+# Socket configuration - Must match server settings
 SOCKET_PATH = "/run/flow/firewall.sock"
 SOCKET_TIMEOUT = 5.0  # seconds
 MAX_RESPONSE_LENGTH = 4096
+# Retry settings
 MAX_RETRIES = 3
 INITIAL_BACKOFF = 1.0  # seconds
 MAX_BACKOFF = 30.0  # seconds
@@ -22,7 +31,12 @@ _helper_available = None  # None = unknown, True = available, False = unavailabl
 
 
 def exponential_backoff_retry(max_retries=MAX_RETRIES):
-    """Decorator for retry logic with exponential backoff"""
+    """
+    Decorator for retry logic with exponential backoff.
+    
+    If the decorated function raises ConnectionRefusedError, FileNotFoundError, or socket.timeout,
+    it retries up to `max_retries` with increasing wait times.
+    """
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -51,7 +65,12 @@ def exponential_backoff_retry(max_retries=MAX_RETRIES):
 def _send_firewall_command(command: str) -> Tuple[bool, str]:
     """
     Send command to firewall helper via Unix socket with retry logic.
-    Returns (success, response_or_error)
+    
+    Args:
+        command (str): The raw text command to send.
+        
+    Returns:
+        tuple: (success: bool, response_or_error: str)
     """
     if not os.path.exists(SOCKET_PATH):
         raise FileNotFoundError(f"Firewall helper socket not found at {SOCKET_PATH}")
@@ -85,8 +104,13 @@ def _send_firewall_command(command: str) -> Tuple[bool, str]:
 
 def is_firewall_available() -> bool:
     """
-    Check if firewall helper is running and responsive with caching.
-    Uses cached result unless cache is expired.
+    Check if firewall helper is running and responsive.
+    
+    Uses a simple short-term cache to avoid spamming sockets on repeated calls.
+    Returns cached result if within `_health_check_interval`.
+    
+    Returns:
+        bool: True if available, False otherwise.
     """
     global _last_health_check, _helper_available
     
@@ -114,31 +138,81 @@ def is_firewall_available() -> bool:
         return False
 
 
-def block_ip(ip: str, timeout_seconds: Optional[int] = None) -> Tuple[bool, str]:
+# Severity to timeout mapping (seconds)
+SEVERITY_TIMEOUTS = {
+    "low": 60,         # 1 min for reconnaissance
+    "medium": 300,     # 5 mins for suspicious
+    "high": 1800,      # 30 mins for attack
+    "critical": 3600,  # 1 hour for active threat
+}
+
+# ... (exponential_backoff_retry and _send_firewall_command remain same) ...
+
+def block_ip(ip: str, severity: str = "medium", timeout_seconds: Optional[int] = None) -> Tuple[bool, str]:
     """
     Block an IP address via firewall helper with automatic retry.
     
     Args:
-        ip: IP address to block
-        timeout_seconds: Optional timeout in seconds (1-86400)
+        ip: IP address to block.
+        severity: Alert severity level (low, medium, high, critical) to determine timeout.
+        timeout_seconds: Optional explicit timeout overrides severity default.
     
     Returns:
         (success, error_message)
     """
-    log.info("block_ip called for %s (timeout=%s)", ip, timeout_seconds)
+    # Layer 1: Protected IP guard - refuse to block critical system IPs
+    from core.protected_ips import is_protected_ip, get_protection_reason
+    if is_protected_ip(ip):
+        reason = get_protection_reason(ip)
+        log.warning(f"Refused to block protected IP: {ip} ({reason})")
+        return False, f"Protected IP refused: {reason}"
+    
+    # Determine timeout
+    if timeout_seconds is None:
+        timeout_seconds = SEVERITY_TIMEOUTS.get(severity.lower(), 300)
+    
+    # Dry-run mode: log decision but don't actually block
+    from core import settings_api
+    if settings_api.is_firewall_dry_run():
+        log.warning(
+            "DRY-RUN: would block ip=%s timeout=%ss severity=%s",
+            ip, timeout_seconds, severity
+        )
+        return True, "Dry-run: block simulated"
+    
+    log.info("block_ip called for %s (severity=%s, timeout=%s)", ip, severity, timeout_seconds)
+    
+    # Simple reason mapping based on severity, strictly alphanumeric for helper
+    reason_map = {
+        "low": "reconnaissance",
+        "medium": "suspicious_activity",
+        "high": "confirmed_attack",
+        "critical": "active_threat",
+    }
+    reason = reason_map.get(severity.lower(), "manual_block")
     
     # Build command
-    reason = "blocked_by_flow"
-    if timeout_seconds:
-        command = f"BLOCK_IP {ip} {reason} {timeout_seconds}"
-    else:
-        command = f"BLOCK_IP {ip} {reason}"
+    command = f"BLOCK_IP {ip} {reason} {timeout_seconds}"
     
     try:
         ok, response = _send_firewall_command(command)
         
         if ok:
-            log.info("Successfully blocked IP: %s", ip)
+            # Store block record with expiration time
+            from datetime import timedelta
+            from django.utils import timezone
+            from core.models import BlockedIp
+            
+            expires = timezone.now() + timedelta(seconds=timeout_seconds)
+            BlockedIp.objects.update_or_create(
+                ip=ip,
+                defaults={
+                    "expires_at": expires,
+                    "reason": reason
+                }
+            )
+            
+            log.info("Successfully blocked IP: %s (expires: %s)", ip, expires)
             return True, ""
         else:
             return False, response
@@ -229,3 +303,48 @@ def add_ip_to_block_set(ip: str, timeout_seconds: Optional[int] = None) -> Tuple
     return block_ip(ip, timeout_seconds)
 
 
+def reconcile_firewall_state():
+    """
+    Sync kernel nftables state with PostgreSQL BlockedIp table.
+    
+    Kernel state is authoritative. This should be called on app startup
+    to ensure database matches actual firewall rules.
+    
+    Rules:
+    - If IP exists in nftables but not DB → insert into DB
+    - If IP exists in DB but not nftables → delete from DB
+    - Never auto-block new IPs from DB alone
+    """
+    from django.db import transaction
+    from core.models import BlockedIp
+    
+    if not is_firewall_available():
+        log.warning("Firewall helper not available, skipping reconciliation")
+        return
+    
+    try:
+        # Get all blocked IPs from kernel (via helper)
+        nft_ips = set(get_blocked_ips())
+        
+        with transaction.atomic():
+            # Get all IPs in database
+            db_ips = set(BlockedIp.objects.values_list("ip", flat=True))
+            
+            # Kernel → DB (missing rows): add IPs that are in nftables but not in DB
+            for ip in nft_ips - db_ips:
+                BlockedIp.objects.create(
+                    ip=ip,
+                    reason="reconciled_from_kernel",
+                )
+                log.info(f"Reconciliation: added {ip} to DB (was in kernel only)")
+            
+            # DB → cleanup (stale rows): remove IPs that are in DB but not in nftables
+            stale_ips = db_ips - nft_ips
+            if stale_ips:
+                deleted_count = BlockedIp.objects.filter(ip__in=stale_ips).delete()[0]
+                log.info(f"Reconciliation: removed {deleted_count} stale entries from DB")
+        
+        log.info(f"Firewall reconciliation complete: {len(nft_ips)} IPs in kernel, DB synced")
+        
+    except Exception as e:
+        log.exception(f"Error during firewall reconciliation: {e}")

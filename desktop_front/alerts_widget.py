@@ -1,3 +1,10 @@
+"""
+Alerts Widget.
+
+This module implements the Alerts tab, displaying a table of security alerts.
+It allows filtering, clearing alerts, and taking actions like blocking IPs.
+"""
+
 import sys
 import os
 from pathlib import Path
@@ -14,6 +21,9 @@ from PyQt6.QtWidgets import (
     QTableWidgetItem,
     QMessageBox,
     QApplication,
+    QSplitter,
+    QTextEdit,
+    QPushButton,
 )
 from PyQt6.QtCore import pyqtSignal, Qt
 
@@ -42,6 +52,12 @@ log = logging.getLogger("desktop_front.alerts_widget")
 
 
 class AlertsWidget(QWidget):
+    """
+    The Alerts tab widget.
+    
+    Displays security alerts in a color-coded table (High=Red, Medium=Yellow, Low=Blue).
+    Provides controls to filter results and block source IPs.
+    """
     SRC_IP_COL = 3  # "Source IP" column (was 4 when icon column existed)
     alert_selected = pyqtSignal(object)
 
@@ -49,6 +65,7 @@ class AlertsWidget(QWidget):
         super().__init__(parent)
 
         self.field_map = _get_field_map()
+        self.seen_alert_ids = set()  # Track seen alerts for notifications
 
         self.logical_columns = []
         if self.field_map.get("time"):
@@ -173,8 +190,38 @@ class AlertsWidget(QWidget):
         self.col_manager = TableColumnManager(self.table, "alerts_table_state")
         self.col_manager.setup()
 
+        # Add "Explain Alert" toggle button
+        self.explain_btn = QPushButton("Explain Alert")
+        self.explain_btn.setCheckable(True)
+        self.explain_btn.setChecked(False)
+        self.explain_btn.toggled.connect(self._toggle_explain_panel)
+        top_layout.addWidget(self.explain_btn)
+        
         main_layout.addLayout(top_layout)
-        main_layout.addWidget(self.table)
+        
+        # Create splitter with table and explanation panel
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.addWidget(self.table)
+        
+        # Explanation panel (hidden by default)
+        self.explain_panel = QTextEdit()
+        self.explain_panel.setReadOnly(True)
+        self.explain_panel.setVisible(False)
+        self.explain_panel.setStyleSheet("""
+            QTextEdit {
+                background-color: #0f172a;
+                color: #e5e7eb;
+                font-size: 13px;
+                padding: 8px;
+                border: 1px solid #334155;
+                border-radius: 4px;
+            }
+        """)
+        self.splitter.addWidget(self.explain_panel)
+        self.splitter.setStretchFactor(0, 3)
+        self.splitter.setStretchFactor(1, 2)
+        
+        main_layout.addWidget(self.splitter)
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh_alerts)
@@ -229,6 +276,9 @@ class AlertsWidget(QWidget):
         except DatabaseError:
             return
 
+        # Notify for new alerts (only unresolved, high/critical severity)
+        self._notify_new_alerts(alerts)
+
         self.table.setRowCount(len(alerts))
 
         for row, a in enumerate(alerts):
@@ -269,6 +319,9 @@ class AlertsWidget(QWidget):
         # self.table.resizeColumnsToContents() # Disabled to allow user resizing
 
     def _color_row_by_severity(self, row, alert_obj):
+        """
+        Apply background color to the row based on alert severity.
+        """
         field_name = self.field_map.get("severity")
         if not field_name:
             return
@@ -323,6 +376,10 @@ class AlertsWidget(QWidget):
         return ip or None
 
     def on_block_source_ip(self):
+        """
+        Handler for the 'Block source IP' button.
+        Triggers a firewall block via the privileged helper.
+        """
         if not settings_api.firewall_allowed():
             QMessageBox.warning(
                 self,
@@ -332,6 +389,7 @@ class AlertsWidget(QWidget):
             )
             return
 
+        # Get IP first
         ip = self._get_selected_src_ip()
         if not ip:
             QMessageBox.information(
@@ -341,10 +399,25 @@ class AlertsWidget(QWidget):
             )
             return
 
+        # Attempt to get severity from the alert object associated with the row
+        severity = "medium"
+        row = self.table.currentRow()
+        if row >= 0:
+            item = self.table.item(row, 0)
+            if item:
+                alert_id = item.data(Qt.ItemDataRole.UserRole)
+                if alert_id:
+                    try:
+                        alert = Alert.objects.get(id=alert_id)
+                        severity = getattr(alert, "severity", "medium").lower()
+                    except Exception:
+                        pass
+
         confirm = QMessageBox.question(
             self,
             "Block IP",
-            f"Add a firewall rule to block traffic from {ip}?\n\n"
+            f"Add a firewall rule to block traffic from {ip}?\n"
+            f"Severity: {severity}\n\n"
             "This uses nftables via pkexec. You might be asked for your password.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
@@ -352,7 +425,7 @@ class AlertsWidget(QWidget):
         if confirm != QMessageBox.StandardButton.Yes:
             return
 
-        ok, msg = block_ip(ip)
+        ok, msg = block_ip(ip, severity=severity)
 
         if ok:
             QMessageBox.information(
@@ -366,9 +439,6 @@ class AlertsWidget(QWidget):
                 "Firewall rule failed",
                 f"Could not add rule for {ip}.\n\nError: {msg}",
             )
-        log.info("Firewall result for %s: ok=%s msg=%s", ip, ok, msg)
-
-
         log.info("Firewall result for %s: ok=%s msg=%s", ip, ok, msg)
 
     def _on_selection_changed(self):
@@ -388,7 +458,135 @@ class AlertsWidget(QWidget):
         try:
             alert = Alert.objects.get(id=alert_id)
             self.alert_selected.emit(alert)
+            # Update explanation panel if visible
+            self._update_explanation(alert)
         except Alert.DoesNotExist:
             self.alert_selected.emit(None)
         except Exception as e:
             log.error("Error fetching selected alert: %s", e)
+
+    def _toggle_explain_panel(self, checked):
+        """Toggle visibility of the explanation panel."""
+        self.explain_panel.setVisible(checked)
+        if checked:
+            # Update explanation for current selection
+            row = self.table.currentRow()
+            if row >= 0:
+                item = self.table.item(row, 0)
+                if item:
+                    alert_id = item.data(Qt.ItemDataRole.UserRole)
+                    try:
+                        alert = Alert.objects.get(id=alert_id)
+                        self._update_explanation(alert)
+                    except Exception:
+                        pass
+
+    def _update_explanation(self, alert):
+        """Update the explanation panel with alert details."""
+        if not self.explain_panel.isVisible():
+            return
+        
+        if alert is None:
+            self.explain_panel.setText("Select an alert to see details.")
+            return
+        
+        self.explain_panel.setText(self._build_explanation(alert))
+
+    def _build_explanation(self, alert) -> str:
+        """Build human-readable explanation for an alert."""
+        lines = []
+        
+        lines.append("=" * 40)
+        lines.append("ALERT DETAILS")
+        lines.append("=" * 40)
+        lines.append("")
+        
+        lines.append(f"Alert Type: {alert.alert_type or 'Unknown'}")
+        lines.append(f"Severity: {(alert.severity or 'medium').upper()}")
+        lines.append(f"Detected At: {alert.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+        lines.append("")
+        
+        lines.append("-" * 40)
+        lines.append("NETWORK DETAILS")
+        lines.append("-" * 40)
+        
+        if alert.src_ip:
+            lines.append(f"Source IP: {alert.src_ip}")
+        if alert.dst_ip:
+            lines.append(f"Destination IP: {alert.dst_ip}")
+        if alert.dst_port:
+            lines.append(f"Destination Port: {alert.dst_port}")
+        lines.append("")
+        
+        if alert.process_name or alert.pid:
+            lines.append("-" * 40)
+            lines.append("PROCESS DETAILS")
+            lines.append("-" * 40)
+            if alert.process_name:
+                lines.append(f"Process: {alert.process_name}")
+            if alert.pid:
+                lines.append(f"PID: {alert.pid}")
+            lines.append("")
+        
+        if alert.category:
+            lines.append(f"Category: {alert.category}")
+            lines.append("")
+        
+        lines.append("-" * 40)
+        lines.append("DESCRIPTION")
+        lines.append("-" * 40)
+        lines.append(alert.message or "No additional details.")
+        lines.append("")
+        
+        lines.append("-" * 40)
+        lines.append("STATUS")
+        lines.append("-" * 40)
+        if alert.resolved:
+            lines.append("✓ RESOLVED")
+        else:
+            lines.append("⚠ ACTIVE THREAT")
+        
+        return "\n".join(lines)
+
+    def _notify_new_alerts(self, alerts):
+        """
+        Send notifications for new, unresolved, high-severity alerts.
+        Only notifies once per alert (tracked by seen_alert_ids).
+        """
+        # Get notification manager from parent window
+        try:
+            main_window = self.window()
+            if not main_window or not hasattr(main_window, 'notification_manager'):
+                return
+            nm = main_window.notification_manager
+            if not nm:
+                return
+        except Exception:
+            return
+        
+        for alert in alerts:
+            # Skip if already seen
+            if alert.id in self.seen_alert_ids:
+                continue
+            
+            # Skip resolved alerts
+            if alert.resolved:
+                self.seen_alert_ids.add(alert.id)
+                continue
+            
+            # Only notify for medium/high/critical severity
+            severity = (alert.severity or "").lower()
+            if severity not in ("medium", "high", "critical"):
+                self.seen_alert_ids.add(alert.id)
+                continue
+            
+            # Send notification
+            nm.notify_alert(
+                title=f"Flow Alert: {alert.alert_type or 'Security Event'}",
+                message=alert.message or f"Alert from {alert.src_ip}",
+                severity=severity
+            )
+            
+            self.seen_alert_ids.add(alert.id)
+            log.info(f"Sent notification for alert {alert.id}")
+

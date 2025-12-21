@@ -23,5 +23,15 @@ class CoreConfig(AppConfig):
             firewall.ensure_table()
             firewall.ensure_chain()
             firewall.ensure_set()
+            # Defer reconciliation to avoid DB access during app init
+            # This runs 2 seconds after startup, when apps are fully loaded
+            import threading
+            threading.Timer(2.0, firewall.reconcile_firewall_state).start()
+        except Exception:
+            pass
+
+        # Register signal handlers
+        try:
+            from . import signals  # noqa: F401
         except Exception:
             pass

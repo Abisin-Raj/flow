@@ -1,3 +1,9 @@
+"""
+UI Helpers.
+
+Common text formatting and simple widget creation utilities.
+"""
+
 from PyQt6.QtWidgets import (
     QPushButton,
     QSizePolicy,
@@ -5,6 +11,7 @@ from PyQt6.QtWidgets import (
 )
 
 def make_small_button(text: str) -> QPushButton:
+    """Creates a standard small push button with fixed width."""
     btn = QPushButton(text)
     btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
     btn.setMaximumWidth(170)

@@ -1,3 +1,10 @@
+"""
+Dashboard Widget.
+
+This module implements the main dashboard tab, which provides a high-level overview of the system status.
+It includes key metrics (connections today, alerts, quarantines), real-time graphs, and "Top N" lists.
+"""
+
 from datetime import datetime, timezone
 
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
@@ -28,6 +35,10 @@ log = logging.getLogger(__name__)
 
 
 class DashboardWorker(QThread):
+    """
+    Background thread to fetch dashboard statistics from the database.
+    This prevents the UI from freezing while performing potentially slow count queries.
+    """
     data_ready = pyqtSignal(dict)
 
     def run(self):
@@ -143,6 +154,15 @@ class DashboardWorker(QThread):
 
 
 class DashboardWidget(QWidget):
+    """
+    The main Dashboard tab UI.
+    
+    Layout:
+    1.  Top Stats Row: Key metrics cards (Connections, Alerts, Quarantines).
+    2.  Graphs Section: Real-time traffic plots (via DashboardGraphsWidget).
+    3.  Overview Grid: Additional stats and Top-5 lists.
+    4.  Footer: Refresh status and controls.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.worker = None
@@ -164,6 +184,7 @@ class DashboardWidget(QWidget):
         self.refresh_dashboard()
 
     def _build_ui(self):
+        """Construct the widget layout."""
         main = QVBoxLayout()
         main.setContentsMargins(12, 12, 12, 12)
         main.setSpacing(12)

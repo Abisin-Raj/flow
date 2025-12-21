@@ -1,3 +1,11 @@
+"""
+Threat Timeline Widget.
+
+This module provides a unified chronological view of security events.
+It combines network alerts, file quarantine events, and connection details.
+It also integrates process ancestry (process tree) to show the origin of threats.
+"""
+
 from datetime import timedelta
 
 from PyQt6.QtCore import QTimer
@@ -24,6 +32,8 @@ class ThreatTimelineWidget(QWidget):
     - Connection info
     - Process chain (parent tree)
     - File quarantine events (if present)
+    
+    Auto-refreshes every 5 seconds.
     """
 
     def __init__(self, parent=None):
@@ -101,17 +111,17 @@ class ThreatTimelineWidget(QWidget):
 
     def refresh(self):
         """Refresh the threat timeline with recent alerts and quarantine events."""
+        import logging
+        log = logging.getLogger("desktop_front.threat_timeline")
+        
         try:
-            now = timezone.now()
-            window = now - timedelta(hours=1)
-
-            # Alerts with prefetched connections
-            alerts = (
-                Alert.objects.filter(timestamp__gte=window)
-                .select_related("connection")
-                .order_by("-timestamp")
-                [:100]  # Limit to 100 most recent
-            )
+            from django.db import connection as db_connection
+            db_connection.close()  # Force fresh connection for thread safety
+            
+            # Simple query - no select_related to avoid issues
+            alerts = list(Alert.objects.all().order_by("-timestamp")[:100])
+            
+            log.info(f"Threat timeline: found {len(alerts)} alerts")
 
             rows = []
 
@@ -182,16 +192,27 @@ class ThreatTimelineWidget(QWidget):
             rows.sort(key=lambda r: r["time"], reverse=True)
 
             # Update table
-            self.table.setRowCount(len(rows))
-            for row_idx, row in enumerate(rows):
-                local_time = timezone.localtime(row["time"])
-                self._set_item(row_idx, 0, local_time.strftime("%Y-%m-%d %H:%M:%S"))
-                self._set_item(row_idx, 1, row["type"])
-                self._set_item(row_idx, 2, row["severity"])
-                self._set_item(row_idx, 3, row["src"])
-                self._set_item(row_idx, 4, row["dst"])
-                self._set_item(row_idx, 5, row["details"])
-                self._set_item(row_idx, 6, row["process_chain"])
+            if not rows:
+                # Show "no data" message
+                self.table.setRowCount(1)
+                self._set_item(0, 0, "")
+                self._set_item(0, 1, "")
+                self._set_item(0, 2, "")
+                self._set_item(0, 3, "")
+                self._set_item(0, 4, "")
+                self._set_item(0, 5, "No security events found. Trigger an alert to see data here.")
+                self._set_item(0, 6, "")
+            else:
+                self.table.setRowCount(len(rows))
+                for row_idx, row in enumerate(rows):
+                    local_time = timezone.localtime(row["time"])
+                    self._set_item(row_idx, 0, local_time.strftime("%Y-%m-%d %H:%M:%S"))
+                    self._set_item(row_idx, 1, row["type"])
+                    self._set_item(row_idx, 2, row["severity"])
+                    self._set_item(row_idx, 3, row["src"])
+                    self._set_item(row_idx, 4, row["dst"])
+                    self._set_item(row_idx, 5, row["details"])
+                    self._set_item(row_idx, 6, row["process_chain"])
                 
         except Exception as e:
             # Log error but don't crash the widget

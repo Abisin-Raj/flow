@@ -1,3 +1,10 @@
+"""
+Export Utilities.
+
+Helper functions for serializing QuerySets to CSV or JSON.
+Used by the UI for generating downloadable reports.
+"""
+
 import csv
 import json
 from typing import List
@@ -5,6 +12,10 @@ from django.utils import timezone
 
 
 def _serialize_value(val):
+    """
+    Convert a model field value to a string suitable for CSV/JSON.
+    Handles Datetime objects by converting them to local time.
+    """
     if val is None:
         return ""
     try:
@@ -23,8 +34,12 @@ def _serialize_value(val):
 
 def export_query_to_csv(qs, field_names: List[str], file_path: str):
     """
-    Write queryset rows to CSV.
-    field_names is a list of model attribute names.
+    Write a Django QuerySet to a CSV file.
+
+    Args:
+        qs (QuerySet): Source data.
+        field_names (list): List of attribute names to export.
+        file_path (str): Destination file path.
     """
     with open(file_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -39,7 +54,12 @@ def export_query_to_csv(qs, field_names: List[str], file_path: str):
 
 def export_query_to_json(qs, field_names: List[str], file_path: str):
     """
-    Write queryset rows to JSON array.
+    Write a Django QuerySet to a JSON file.
+
+    Args:
+        qs (QuerySet): Source data.
+        field_names (list): List of attribute names to export.
+        file_path (str): Destination file path.
     """
     data = []
     for obj in qs:

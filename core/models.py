@@ -4,6 +4,10 @@ from django.db import models
 
 
 class Connection(models.Model):
+    """
+    Represents a single network connection event (TCP/UDP).
+    Stores source, destination, protocol, and process information.
+    """
     id = models.AutoField(primary_key=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     src_ip = models.GenericIPAddressField(protocol="both", unpack_ipv4=True)
@@ -29,6 +33,10 @@ class Connection(models.Model):
 
 
 class Alert(models.Model):
+    """
+    Represents a security alert triggered by one of the detectors.
+    Contains geo-location data, severity, and status (resolved/unresolved).
+    """
     id = models.AutoField(primary_key=True)
     src_ip = models.CharField(max_length=100, null=True, blank=True)
     dst_ip = models.CharField(max_length=100, null=True, blank=True)
@@ -69,6 +77,10 @@ class Alert(models.Model):
 
 
 class QuarantinedFile(models.Model):
+    """
+    Record of a file moved to quarantine.
+    Stores original location, quarantine location, and malware analysis results.
+    """
     id = models.AutoField(primary_key=True)
     filename = models.CharField(max_length=255)
     original_path = models.TextField()
@@ -137,8 +149,11 @@ class MalwareSignature(models.Model):
 
 
 class WatchedFolder(models.Model):
+    """
+    Configuration for a folder to be monitored by the Folder Watcher service.
+    """
     id = models.AutoField(primary_key=True)
-    path = models.CharField(max_length=500, unique=True)
+    path = models.CharField(max_length=500, unique=True) # Absolute path to watch
     recursive = models.BooleanField(default=True)
     auto_quarantine = models.BooleanField(default=False)
     enabled = models.BooleanField(default=True)
@@ -165,10 +180,24 @@ class AppSetting(models.Model):
 
 
 class BlockedIp(models.Model):
+    """
+    Log of IPs currently or previously blocked by the Auto Mitigator / Firewall.
+    Tracks expiration time for timeout-based blocking.
+    """
     id = models.AutoField(primary_key=True)
-    ip = models.GenericIPAddressField(protocol="both", unpack_ipv4=True, unique=True)
+    # Using CharField instead of GenericIPAddressField to avoid PostgreSQL inet type issues
+    ip = models.CharField(max_length=45, unique=True)  # 45 chars max for IPv6
     blocked_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
     reason = models.TextField(blank=True)
 
+    def is_expired(self):
+        """Check if this block has expired based on expires_at timestamp."""
+        from django.utils import timezone
+        return self.expires_at and timezone.now() >= self.expires_at
+
     def __str__(self):
+        if self.expires_at:
+            return f"{self.ip} (expires {self.expires_at})"
         return f"{self.ip} (blocked {self.blocked_at})"
+

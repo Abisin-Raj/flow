@@ -1,21 +1,33 @@
+"""
+Scan Detector Module.
+
+This module analyzes network packet events to detect port scanning behavior.
+It supports detecting:
+1.  SYN Flood (high frequency of events).
+2.  Brute force port scanning (many ports).
+3.  Fast scanning (moderate speed).
+4.  Horizontal sweeping (same port, many hosts).
+5.  Slow/Stealth scanning.
+"""
+
 from collections import deque, defaultdict
 import threading
 import time
 from typing import List, Tuple, Optional
 
-# configuration
-_WINDOW_SECONDS = 10
-_FAST_PORTS = 50
-_BRUTE_PORTS = 200
-_BRUTE_WINDOW = 5
-_SLOW_PORTS = 15
-_COOLDOWN_SECONDS = 30
-_MAX_STORE = 1000
+# Configuration for detection thresholds
+_WINDOW_SECONDS = 10     # Recent activity window
+_FAST_PORTS = 50         # Threshold for fast scan
+_BRUTE_PORTS = 200       # Threshold for brute force
+_BRUTE_WINDOW = 5        # Short window for brute force
+_SLOW_PORTS = 15         # Threshold for slow scan
+_COOLDOWN_SECONDS = 30   # Minimum time between alerts for same source
+_MAX_STORE = 1000        # Max events to store per source IP
 
-# port sweep and flood configuration
-_SWEEP_HOSTS = 20
-_FLOOD_EVENTS = 300
-_FLOOD_WINDOW = 5
+# Port sweep and flood configuration
+_SWEEP_HOSTS = 20        # Unique hosts for sweep detection
+_FLOOD_EVENTS = 300      # Events count for SYN flood
+_FLOOD_WINDOW = 5        # Window for SYN flood detection
 
 _events = defaultdict(lambda: deque())
 _events_lock = threading.Lock()
@@ -38,7 +50,15 @@ def _trim_events_for_src(src_ip: str, now_ts: float, window: float):
 def note_packet(
     src_ip: str, dst_port: int, ts: Optional[float] = None, dst_ip: Optional[str] = None
 ):
-    """Record a SYN-like event for a given source IP and destination port."""
+    """
+    Record a network event (e.g., SYN packet) for analysis.
+
+    Args:
+        src_ip (str): Source IP address.
+        dst_port (int): Destination port.
+        ts (float, optional): Timestamp. Defaults to now.
+        dst_ip (str, optional): Destination IP (for sweep detection).
+    """
     if not src_ip:
         return
     if ts is None:
@@ -68,7 +88,16 @@ def _unique_ports_in_window(src_ip: str, now_ts: float, window_seconds: float) -
 def classify_scan(
     events: List[Tuple[float, int, str]], now_ts: Optional[float] = None
 ) -> str:
-    """Classify scan pattern for a single src_ip."""
+    """
+    Analyze a list of events to classify the scan type.
+
+    Args:
+        events (list): List of (timestamp, port, dst_ip).
+        now_ts (float, optional): Current timestamp.
+
+    Returns:
+        str: 'syn_flood', 'brute', 'fast', 'sweep', 'slow', or 'unknown'.
+    """
     if now_ts is None:
         now_ts = time.time()
 
@@ -115,6 +144,20 @@ def classify_scan(
 def evaluate_for_alert(
     src_ip: str, now_ts: Optional[float] = None, *, produce_cooldown: bool = True
 ) -> Optional[str]:
+    """
+    Evaluate if a source IP needs an alert generated.
+    
+    This checks the recent events for the IP, classifies the activity,
+    and applies cooldown logic to prevent alert fatigue.
+
+    Args:
+        src_ip (str): Source IP.
+        now_ts (float, optional): Timestamp.
+        produce_cooldown (bool): If True, updates the last alert timestamp.
+
+    Returns:
+        str or None: Scan category if alert should be produced, else None.
+    """
     if now_ts is None:
         now_ts = time.time()
 

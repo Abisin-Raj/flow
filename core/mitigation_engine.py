@@ -1,3 +1,11 @@
+"""
+Mitigation Engine.
+
+This module defines logic for suggesting mitigation actions based on alerts.
+It analyzes the properties of an alert (type, message, IPs) and recommends
+actions like blocking an IP or marking an alert as resolved.
+"""
+
 import logging
 from dataclasses import dataclass
 from typing import List
@@ -9,17 +17,27 @@ log = logging.getLogger("core.mitigation_engine")
 
 @dataclass
 class MitigationAction:
-    code: str          # e.g. "block_ip"
-    label: str         # e.g. "Block source IP via firewall"
-    description: str   # human readable
-    ip_to_block: str | None = None
-    auto_allowed: bool = False  # safe to auto apply if user enables
+    """
+    Data structure representing a proposed mitigation action.
+    """
+    code: str          # Machine-readable code (e.g., "block_ip")
+    label: str         # UI Label (e.g., "Block source IP via firewall")
+    description: str   # Detailed human-readable description
+    ip_to_block: str | None = None # IP address target for the action, if applicable
+    auto_allowed: bool = False  # Whether this action is safe for auto-execution preferences
 
 
 def suggest_actions_for_alert(alert: Alert) -> List[MitigationAction]:
     """
-    Turn an Alert into a list of recommended actions.
-    Pure logic, no side effects.
+    Determine recommended mitigation actions for a given Alert.
+
+    This function is pure logic and does not perform any side effects.
+
+    Args:
+        alert (Alert): The alert object to analyze.
+
+    Returns:
+        List[MitigationAction]: A list of suggested actions.
     """
     actions: List[MitigationAction] = []
 

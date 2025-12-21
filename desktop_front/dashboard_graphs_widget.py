@@ -1,9 +1,23 @@
-# desktop_front/dashboard_graphs_widget.py
+"""
+Dashboard Graphs Widget.
+
+This module provides the real-time matplotlib graphs for the dashboard.
+It plots connection rates and alert rates over the last N minutes.
+"""
+
 import sys
 from pathlib import Path
 from datetime import timedelta
 from collections import deque
 import warnings
+import logging
+from django.utils import timezone
+from django.db import DatabaseError
+from django.db.models import Count
+from django.db.models.functions import TruncMinute
+from core.models import Connection, Alert
+
+log = logging.getLogger(__name__)
 
 from PyQt6.QtCore import QTimer, QThread, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -15,31 +29,13 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
 )
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-if str(BASE_DIR) not in sys.path:
-    sys.path.append(str(BASE_DIR))
-
-# django setup removed (handled by main entry point)
-
-from django.utils import timezone  # noqa: E402
-from django.db import DatabaseError # noqa: E402
-from django.db.models import Count # noqa: E402
-from django.db.models.functions import TruncMinute # noqa: E402
-from core.models import Connection, Alert  # noqa: E402
-
 from matplotlib.figure import Figure  # noqa: E402
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas  # noqa: E402
 
-import logging  # noqa: E402
-
-log = logging.getLogger(__name__)
-
-# Suppress harmless matplotlib layout warnings
-warnings.filterwarnings("ignore", message="Tight layout not applied")
-warnings.filterwarnings("ignore", message="constrained_layout not applied")
-
-
 class GraphWorker(QThread):
+    """
+    Background thread to compute time-series data for graphs.
+    """
     data_ready = pyqtSignal(list, list, list)
 
     def __init__(self, minutes):
@@ -157,6 +153,9 @@ class GraphWorker(QThread):
 
 
 class DashboardGraphsWidget(QWidget):
+    """
+    Widget containing the Matplotlib canvas for traffic graphs.
+    """
     def __init__(self, parent=None, minutes=30, refresh_interval_ms=5000):
         super().__init__(parent)
 

@@ -1,3 +1,10 @@
+"""
+CSV Logger Module.
+
+This module handles the continuous logging of high-severity alerts to daily CSV files.
+This provides a persistent, rotation-friendly log format outside the main database.
+"""
+
 import os
 import csv
 from pathlib import Path
@@ -8,11 +15,16 @@ CSV_DIR = Path(os.path.expanduser("~/.flow_csv"))
 
 
 def ensure_csv_dir() -> Path:
+    """Ensure the CSV logging directory exists."""
     CSV_DIR.mkdir(parents=True, exist_ok=True)
     return CSV_DIR
 
 
 def get_daily_csv_path(prefix: str = "high_alerts") -> Path:
+    """
+    Get the file path for today's log file.
+    Format: ~/.flow_csv/{prefix}_{YYYY_MM_DD}.csv
+    """
     ensure_csv_dir()
     today = datetime.now().strftime("%Y_%m_%d")
     filename = f"{prefix}_{today}.csv"
@@ -22,7 +34,13 @@ def get_daily_csv_path(prefix: str = "high_alerts") -> Path:
 def append_high_alert_to_csv(alert_obj, field_map: dict):
     """
     Append a single 'high' severity alert to today's CSV file.
-    Uses field_map from _get_field_map to extract values.
+    
+    This function manually constructs the CSV row to ensure control over
+    field formatting and error handling.
+
+    Args:
+        alert_obj (Alert): The alert instance to log.
+        field_map (dict): Mapping of CSV headers to Alert model fields.
     """
     csv_path = get_daily_csv_path()
 

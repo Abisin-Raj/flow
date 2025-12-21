@@ -1,3 +1,11 @@
+"""
+Reverse Shell Detector.
+
+This module monitors running processes to detect potential reverse shells.
+It looks for suspicious processes (like netcat, bash, python) that have established
+connections to remote IPs, indicating a potential attacker controlling the system.
+"""
+
 import threading
 import time
 import logging
@@ -7,18 +15,31 @@ from django.db import close_old_connections
 
 log = logging.getLogger("core.rev_shell_detector")
 
+# set of process names that are commonly used for reverse shells
 SUSPICIOUS_PROCESS_NAMES = {
     "nc", "ncat", "netcat", "bash", "sh", "zsh", "dash", "python", "python3", "perl", "ruby", "php"
 }
 
 class ReverseShellDetector(threading.Thread):
+    """
+    Background thread to periodically check for reverse shell patterns.
+    """
     def __init__(self, interval=5):
+        """
+        Initialize the detector.
+
+        Args:
+            interval (int): Seconds to sleep between checks.
+        """
         super().__init__(daemon=True)
         self.interval = interval
         self.running = True
-        self.known_shells = set()  # Track PIDs to avoid spamming alerts
+        self.known_shells = set()  # Track PIDs to avoid spamming alerts for the same process
 
     def run(self):
+        """
+        Main loop for the detector thread.
+        """
         log.info("ReverseShellDetector started")
         while self.running:
             try:
@@ -26,10 +47,17 @@ class ReverseShellDetector(threading.Thread):
             except Exception as e:
                 log.exception("Error in ReverseShellDetector loop: %s", e)
             finally:
+                # Ensure DB connections are closed to prevent leaks
                 close_old_connections()
             time.sleep(self.interval)
 
     def check_processes(self):
+        """
+        Iterate over running processes and check for suspicious network connections.
+        
+        It looks for processes in `SUSPICIOUS_PROCESS_NAMES` that have established
+        external TCP connections.
+        """
         current_pids = set()
         
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
@@ -39,20 +67,20 @@ class ReverseShellDetector(threading.Thread):
                 name = pinfo['name']
                 cmdline = pinfo['cmdline'] or []
                 
-                # Debug logging: trace python processes
+                # Debug logging: trace python processes as they are common targets/vectors
                 if "python" in name:
                     log.info("Found python process: %s (pid %s)", name, pid)
                 
                 # Check if process name is suspicious
                 if name in SUSPICIOUS_PROCESS_NAMES:
-                    # Check for network connections
+                    # Check for network connections associated with this process
                     connections = proc.connections(kind='inet')
                     for conn in connections:
                         if conn.status == 'ESTABLISHED':
                             remote_ip = conn.raddr.ip
                             remote_port = conn.raddr.port
                             
-                            # Ignore local connections
+                            # Ignore local connections (localhost)
                             if remote_ip.startswith("127.") or remote_ip == "::1":
                                 continue
                                 
@@ -86,12 +114,19 @@ class ReverseShellDetector(threading.Thread):
                                 self.known_shells.add(shell_key)
                                 
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                # Process might have ended during iteration
                 continue
                 
-        # Cleanup old PIDs
+        # Cleanup old PIDs from the known set if they are no longer active
         self.known_shells = self.known_shells.intersection(current_pids)
 
 def start_rev_shell_detector():
+    """
+    Start the Reverse Shell Detector.
+
+    Returns:
+        ReverseShellDetector: The started detector instance.
+    """
     detector = ReverseShellDetector()
     detector.start()
     return detector

@@ -31,6 +31,8 @@ class ServiceControlWidget(QWidget):
     """
     Testing-only panel to enable or disable background services.
     Changes are stored in AppSetting and take effect next time the app starts.
+    
+    This is primarily used for debugging or running the UI without the heavy backend analysis.
     """
 
     def __init__(self, parent=None):

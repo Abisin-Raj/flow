@@ -1,3 +1,12 @@
+"""
+Collectors Module.
+
+This module is the data ingestion engine for network traffic.
+It periodically polls system network state (via `ss`, `/proc/net`, or `netstat`),
+parses the active connections, enriches them with process information (PID, name),
+saves them to the `Connection` database, and evaluates them against alert rules.
+"""
+
 import subprocess
 import time
 import threading
@@ -132,7 +141,21 @@ def get_proc_name_from_pid(pid):
 def create_attributed_alert(src_ip, src_port, dst_ip, dst_port, message, severity="medium", **kwargs):
     """
     Find process that owns the connection and either skip alert or attach proc name.
-    Use this wrapper from collectors where alerts are created for network connections.
+    
+    This helps in reducing false positives by checking if the process is ignored
+    before raising an alert.
+
+    Args:
+        src_ip (str): Source IP.
+        src_port (int): Source Port.
+        dst_ip (str): Destination IP.
+        dst_port (int): Destination Port.
+        message (str): Alert message.
+        severity (str): Alert severity.
+        **kwargs: Extra arguments for `create_alert_for_connection`.
+
+    Returns:
+        Alert or None: Created alert or None if skipped/failed.
     """
     try:
         pid = find_pid_for_connection(src_ip, src_port, dst_ip, dst_port)
@@ -341,8 +364,19 @@ def split_address(addr: str):
 @transaction.atomic
 def save_connections(data_list):
     """
-    Store parsed netstat entries into Connection.
-    Also evaluate alert rules.
+    Store parsed Connection data into the database and trigger analysis.
+
+    For each unique connection entry:
+    1.  Parse and validate IP/Port.
+    2.  Enrich with Process Info (PID, PPID, PName).
+    3.  Create a `Connection` record.
+    4.  Pass to `rare_port_detector`.
+    5.  Pass to `evaluate_alert_rules`.
+    
+    This runs inside a transaction to ensure data integrity.
+
+    Args:
+        data_list (list): List of connection dicts from parsers.
     """
     now = timezone.now()
 
@@ -402,8 +436,18 @@ def save_connections(data_list):
 
 def evaluate_alert_rules(conn: Connection, now):
     """
-    Alert logic using thresholds from app_settings.
-    Demo mode gently lowers thresholds.
+    Check a new connection against various detection rules.
+    
+    Rules checked:
+    1.  High Connection Rate (DOS/spam).
+    2.  Port Scan (many distinct destination ports).
+    3.  SYN Flood (many SYN_SENT states).
+    4.  Sensitive Port Access (connecting to known internal services).
+    5.  Reverse Shell patterns (connecting to known C2 ports).
+
+    Args:
+        conn (Connection): The connection instance to evaluate.
+        now (datetime): Current timestamp.
     """
     if not conn.src_ip:
         return
@@ -541,8 +585,15 @@ def evaluate_alert_rules(conn: Connection, now):
 
 def connection_collector_loop(interval=3):
     """
-    Background loop: collect netstat data every `interval` seconds.
-    Handles database errors by retrying with backoff.
+    Main background loop for the connection collector.
+    
+    Periodically:
+    1.  Collects active connections using the best available tool (`ss` > `/proc` > `netstat`).
+    2.  Parses the output.
+    3.  Saves to DB and analyzes for threats.
+    4.  Sleeps for `interval`.
+    
+    Handles DB errors gracefully with exponential backoff to prevent log spam/crashing.
     """
     from django.db import connection
     from django.db.utils import DatabaseError

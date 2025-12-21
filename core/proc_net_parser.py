@@ -11,8 +11,16 @@ from pathlib import Path
 
 def hex_to_ip(hex_str):
     """
-    Convert hex IP address from /proc/net/tcp to dotted decimal.
-    Format: Little-endian hex, e.g., '0100007F' = 127.0.0.1
+    Convert hex IP address from `/proc/net/tcp` format to dotted decimal string.
+    
+    The kernel uses Little-endian for IPv4 addresses in procfs.
+    Example: '0100007F' -> 127.0.0.1
+    
+    Args:
+        hex_str (str): 8-char hex string.
+
+    Returns:
+        str: IP address or empty string on failure.
     """
     try:
         # Convert hex string to integer, then to 4 bytes (little-endian)
@@ -25,8 +33,16 @@ def hex_to_ip(hex_str):
 
 def hex_to_port(hex_str):
     """
-    Convert hex port from /proc/net/tcp to integer.
-    Format: Big-endian hex, e.g., '01BB' = 443
+    Convert hex port from `/proc/net/tcp` to integer.
+    
+    The kernel uses Big-endian for ports in procfs.
+    Example: '01BB' -> 443
+    
+    Args:
+        hex_str (str): 4-char hex string.
+
+    Returns:
+        int: Port number or 0 on failure.
     """
     try:
         return int(hex_str, 16)
@@ -36,13 +52,17 @@ def hex_to_port(hex_str):
 
 def parse_proc_net_line(line):
     """
-    Parse a single line from /proc/net/tcp or /proc/net/udp.
+    Parse a single line from `/proc/net/tcp` or `/proc/net/udp`.
     
-    Format:
+    Line Format:
       sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
-      0: 0100007F:0CEA 00000000:0000 0A 00000000:00000000 00:00000000 00000000  1000        0 28990 1 0000000000000000 100 0 0 10 0
+      0: 0100007F:0CEA 00000000:0000 0A ...
     
-    Returns dict with: src_ip, src_port, dst_ip, dst_port, state, inode
+    Args:
+        line (str): Raw line from proc file.
+
+    Returns:
+        dict: {src_ip, src_port, dst_ip, dst_port, state, inode} or None.
     """
     parts = line.split()
     if len(parts) < 10:
@@ -92,8 +112,16 @@ def parse_proc_net_line(line):
 
 def find_pid_by_inode(inode):
     """
-    Find the PID that owns a socket inode by scanning /proc/*/fd/*
-    This maps the connection to a process.
+    Resolve a socket inode to a PID by scanning `/proc/[pid]/fd/`.
+    
+    This matches the inode number found in `/proc/net/tcp` to the
+    symbolic links in the file descriptor table of running processes.
+    
+    Args:
+        inode (int): The inode number of the socket.
+
+    Returns:
+        int: PID owning the socket, or None if not found.
     """
     socket_str = f"socket:[{inode}]"
     
@@ -127,8 +155,13 @@ def find_pid_by_inode(inode):
 
 def parse_proc_net():
     """
-    Read /proc/net/tcp and /proc/net/udp directly to get ALL connections.
-    Returns list of dicts with format similar to parse_netstat_output().
+    Aggregate all active network connections from procfs.
+    
+    Reads both TCP and UDP tables.
+    Resolves PIDs and Process Names for each connection.
+    
+    Returns:
+        list: List of connection dictionaries enriched with PID and process info.
     """
     results = []
     

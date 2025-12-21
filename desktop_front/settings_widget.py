@@ -43,6 +43,12 @@ def _get_bool(key: str, default: bool) -> bool:
 class SettingsWidget(QWidget):
     """
     Settings panel for detector thresholds and alert behavior.
+    
+    This widget allows users to:
+    1.  Configure detection thresholds (scan windows, port counts).
+    2.  Set data retention policies.
+    3.  Manage ignored IPs and processes ("Allowlist").
+    4.  Control global security settings (e.g. auto-block, firewall integration).
     """
 
     def __init__(self, parent=None):

@@ -1,3 +1,13 @@
+"""
+File Scan Service.
+
+This module orchestrates file scanning and quarantine operations. it:
+1.  Manages the quarantine directory.
+2.  Safely moves malicious files to quarantine.
+3.  Records quarantine actions in the database.
+4.  Creates alerts for malicious files.
+"""
+
 import logging
 import shutil
 import time
@@ -15,6 +25,10 @@ QUARANTINE_DIR = Path.home() / ".flow_quarantine"
 
 
 def _ensure_quarantine_dir() -> None:
+    """
+    Ensure the quarantine directory exists.
+    Creates it if missing.
+    """
     try:
         QUARANTINE_DIR.mkdir(parents=True, exist_ok=True)
     except Exception as e:
@@ -24,8 +38,20 @@ def _ensure_quarantine_dir() -> None:
 
 def _move_to_quarantine(path: str) -> str:
     """
-    Move file to quarantine with collision handling and bounded retries.
-    Raises if it fails after a few attempts.
+    Move a file to the quarantine directory.
+
+    Handles naming collisions by appending a counter.
+    Retries the move operation a few times in case of filesystem locks.
+
+    Args:
+        path (str): The absolute path to the file to move.
+
+    Returns:
+        str: The new absolute path of the quarantined file.
+
+    Raises:
+        FileNotFoundError: If the source file does not exist.
+        RuntimeError: If moving fails after retries or too many collisions.
     """
     src = Path(path)
 
@@ -78,9 +104,23 @@ def _move_to_quarantine(path: str) -> str:
 
 def scan_and_record(path: str, auto_quarantine: bool = False, progress_cb=None) -> dict:
     """
-    Scan a file, optionally auto-quarantine, and record in QuarantinedFile if malicious.
-    Returns the scan result dict from scan_file.
-    progress_cb is an optional callback for scan progress.
+    Scan a file, handle quarantine if malicious, and update records.
+
+    This function calls the low-level `scan_file` and then:
+    1.  If malicious/suspicious:
+        -   Calculates hashes.
+        -   Moves to quarantine if `auto_quarantine` is True.
+        -   Creates or updates a `QuarantinedFile` database record.
+        -   Creates an `Alert` via `alert_engine`.
+    2.  If clean: returns result immediately.
+
+    Args:
+        path (str): Path to file.
+        auto_quarantine (bool): Whether to move to quarantine automatically.
+        progress_cb (callable, optional): Callback for progress updates (0-100).
+
+    Returns:
+        dict: The scan result dictionary from `scan_file`.
     """
     from django.db import connection
     connection.close()

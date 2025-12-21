@@ -1,3 +1,12 @@
+"""
+File Scanner Widget.
+
+This module implements the File Scanner tab, which provides:
+1.  Manual file scanning interface.
+2.  Management of quarantined files (Restore/Delete).
+3.  Configuration of "Watched Folders" for automatic background scanning.
+"""
+
 import os
 import time
 
@@ -27,6 +36,9 @@ from core.models import QuarantinedFile, WatchedFolder
 from desktop_front.ui_utils import TableColumnManager
 
 class FileScanWorker(QObject):
+    """
+    Background worker for performing file scans to avoid freezing the UI.
+    """
     progress = pyqtSignal(int)
     finished = pyqtSignal(dict)
     error = pyqtSignal(str)
@@ -57,6 +69,14 @@ class FileScanWorker(QObject):
 
 
 class FileScanWidget(QWidget):
+    """
+    The File Scanner tab widget.
+    
+    Layout:
+    1.  Scan Controls: Manual file selection, auto-quarantine toggle.
+    2.  Quarantine Table: List of quarantined files with Restore/Delete actions.
+    3.  Watched Folder Table: List of directories configured for monitoring.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -292,6 +312,10 @@ class FileScanWidget(QWidget):
         self.load_quarantine_table()
 
     def scan_existing_files(self):
+        """
+        Manually trigger a scan of all files within the configured "Watched Folders".
+        Useful for checking folders that were added but unsure if scanned completely.
+        """
         if not self.scan_existing_button.isEnabled():
             return
 

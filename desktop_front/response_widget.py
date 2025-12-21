@@ -1,3 +1,13 @@
+"""
+Response Widget.
+
+This module implements the "Security Operations" tab.
+It provides:
+1.  Context-aware guidance for selected alerts (Incident Response).
+2.  Action buttons to resolve alerts or block IPs.
+3.  A management interface for the global nftables firewall block list.
+"""
+
 import logging
 import sys
 import subprocess
@@ -39,7 +49,10 @@ log = logging.getLogger("desktop_front.response_widget")
 
 
 class BlockIPDialog(QDialog):
-    """Dialog for blocking an IP address"""
+    """
+    Dialog for manually adding an IP to the firewall block list.
+    Allows specifying an IP, a reason, and an automatic timeout.
+    """
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -88,6 +101,12 @@ class BlockIPDialog(QDialog):
 
 
 class ResponseWidget(QWidget):
+    """
+    The Security Operations / Response tab widget.
+    
+    Integrates with `mitigation_engine` to suggest actions for specific alerts.
+    Integrates with `firewall` (and `firewall_helper`) to manage network blocking.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -265,18 +284,21 @@ class ResponseWidget(QWidget):
             return
 
         ip = act.ip_to_block
+        severity = getattr(self.current_alert, "severity", "medium").lower()
 
         confirm = QMessageBox.question(
             self,
             "Block IP",
             f"Add {ip} to the firewall block set using nftables?\n"
+            f"Severity: {severity}\n"
             "This requires root privileges and nft to be available.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
         if confirm != QMessageBox.StandardButton.Yes:
             return
 
-        ok, err = firewall.block_ip(ip)
+        # Pass severity
+        ok, err = firewall.block_ip(ip, severity=severity)
         if not ok:
             QMessageBox.critical(
                 self,
@@ -392,14 +414,12 @@ class ResponseWidget(QWidget):
                 QMessageBox.warning(self, "Invalid Input", "Please enter an IP address")
                 return
             
-            if not reason:
-                reason = "manually_blocked"
-            
-            # Block the IP
-            success, error = firewall.block_ip(ip, timeout)
+            # Block the IP - manual block usually implies explicit timeout or default medium
+            # We use 'medium' as base severity but override with timestamp if provided
+            success, error = firewall.block_ip(ip, severity="medium", timeout_seconds=timeout)
             
             if success:
-                timeout_str = f" ({timeout}s)" if timeout else " (permanent)"
+                timeout_str = f" ({timeout}s)" if timeout else " (default 5m)"
                 QMessageBox.information(
                     self, 
                     "Success", 

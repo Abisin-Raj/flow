@@ -1,3 +1,11 @@
+"""
+Rare Port Detector.
+
+This module detects "suspicious outbound activity" where a local host connects
+repeatedly to an external host on an uncommon port. This is often indicative
+of Command & Control (C2) traffic or data exfiltration.
+"""
+
 import time
 import threading
 import logging
@@ -12,7 +20,7 @@ _WINDOW_SECONDS = 60  # time window to observe repeated use
 _THRESHOLD = 8  # how many connections before we alert
 _COOLDOWN_SECONDS = 300  # do not alert again for same src+port within 5 minutes
 
-# Ports you expect to see often
+# Allowlist of common ports that are generally safe/expected
 _COMMON_PORTS = {
     80,  # HTTP
     443,  # HTTPS
@@ -46,10 +54,22 @@ def _is_private_ip(ip: str) -> bool:
 
 
 def _is_local_to_internet(src_ip: str, dst_ip: str) -> bool:
+    """
+    Traffic filter: only care about Internal -> External traffic.
+
+    Args:
+        src_ip (str): Source IP.
+        dst_ip (str): Destination IP.
+
+    Returns:
+        bool: True if source is private and destination is public Internet.
+    """
     if not src_ip or not dst_ip:
         return False
+    # Source must be private (local)
     if not _is_private_ip(src_ip):
         return False
+    # Destination must NOT be private (so it is public)
     if _is_private_ip(dst_ip):
         return False
     return True
@@ -95,8 +115,17 @@ def handle_connection(
     src_ip: str, dst_ip: str, dst_port: int, protocol: str, now_ts: float = None
 ):
     """
+    Analyze a single connection event for suspicious rare port usage.
+    
     Called from collectors for each outbound connection.
     Decides if it is a rare outbound port and raises an alert when needed.
+
+    Args:
+        src_ip (str): Local source IP.
+        dst_ip (str): Remote destination IP.
+        dst_port (int): Remote port.
+        protocol (str): 'TCP' or 'UDP'.
+        now_ts (float, optional): Timestamp.
     """
     try:
         if now_ts is None:

@@ -2,9 +2,7 @@
 ASGI config for flow project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
+This is the entry point for ASGI-compatible web servers to serve the project (e.g. for WebSockets, though not currently used).
 """
 
 import os

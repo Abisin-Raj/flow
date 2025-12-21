@@ -1,3 +1,10 @@
+"""
+Connections Widget.
+
+This module implements the Connections tab, displaying a real-time table of network connections.
+It supports filtering by IP, port, and status, and uses a background thread for data loading.
+"""
+
 from datetime import datetime
 from django.utils.timezone import localtime
 from PyQt6.QtCore import Qt, QTimer, QThread, QObject, pyqtSignal, pyqtSlot
@@ -26,6 +33,9 @@ from desktop_front.ui_utils import TableColumnManager
 
 
 class StatusDelegate(QStyledItemDelegate):
+    """
+    Custom delegate to paint the Status column with color-coded text.
+    """
     def paint(self, painter, option, index):
         painter.save()
         
@@ -59,6 +69,9 @@ class StatusDelegate(QStyledItemDelegate):
 
 
 class ConnectionsWorker(QObject):
+    """
+    Background worker for fetching Connection data.
+    """
     data_ready = pyqtSignal(list)
     error = pyqtSignal(str)
 
@@ -105,6 +118,15 @@ class ConnectionsWorker(QObject):
 
 
 class ConnectionsWidget(QWidget):
+    """
+    The Connections tab widget.
+    
+    Features:
+    - Real-time table of connections.
+    - Filtering by IP, Port, Status.
+    - Background loading to prevent UI freeze.
+    - Custom column sizing persistence.
+    """
     request_refresh = pyqtSignal(int, str, str, str)
 
     def __init__(self, parent=None):

@@ -28,7 +28,17 @@ from django.db import DatabaseError  # noqa: E402
 from core.export_service import export_alerts_to_csv, export_connections_to_csv  # noqa: E402
 
 
+"""
+Export Widget.
+
+This module implements the Export tab, allowing users to dump Alerts and Connections data to CSV files.
+It calls into the `core.export_service` to perform the actual write operations.
+"""
+
 class ExportWidget(QWidget):
+    """
+    Simple UI with buttons to trigger CSV exports.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -61,6 +71,10 @@ class ExportWidget(QWidget):
         main.addStretch()
 
     def export_alerts(self):
+        """
+        Trigger export of alerts.
+        Handles database locking errors gracefully.
+        """
         try:
             path = export_alerts_to_csv()
         except DatabaseError:
@@ -86,6 +100,10 @@ class ExportWidget(QWidget):
         )
 
     def export_connections(self):
+        """
+        Trigger export of connections.
+        Handles database locking errors gracefully.
+        """
         try:
             path = export_connections_to_csv()
         except DatabaseError:

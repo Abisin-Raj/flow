@@ -1,3 +1,11 @@
+"""
+Top Attackers Widget.
+
+This module provides analytics on the most active threat sources.
+It aggregates alerts by source IP to identify persistent attackers.
+It also breaks down threats by category (e.g. scan types) for each attacker.
+"""
+
 from datetime import timedelta
 
 from PyQt6.QtCore import QTimer
@@ -25,6 +33,16 @@ from core.alert_engine import _get_field_map
 
 
 class TopAttackersWidget(QWidget):
+    """
+    Analytics View: Top Attackers.
+    
+    Features:
+    - Aggregated list of source IPs with highest alert counts.
+    - Breakdown by severity (High/Medium).
+    - Summary of attack categories (e.g., 'SYN_FLOOD', 'SSH_BRUTE').
+    - Date range statistics (First Seen, Last Seen).
+    - Quick actions to filter or block specific IPs.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -279,10 +297,14 @@ class TopAttackersWidget(QWidget):
             )
             return
 
+        # Default to 'high' for top attackers as they are persistent
+        severity = "high"
+
         confirm = QMessageBox.question(
             self,
             "Block IP",
-            f"Add a firewall rule to block traffic from {ip}?\n\n"
+            f"Add a firewall rule to block traffic from {ip}?\n"
+            f"Severity: {severity}\n\n"
             "This uses nftables via pkexec. You might be asked for your password.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
@@ -290,7 +312,7 @@ class TopAttackersWidget(QWidget):
         if confirm != QMessageBox.StandardButton.Yes:
             return
 
-        ok, msg = block_ip(ip)
+        ok, msg = block_ip(ip, severity=severity)
 
         if ok:
             QMessageBox.information(

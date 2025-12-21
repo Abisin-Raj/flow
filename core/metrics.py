@@ -1,4 +1,10 @@
-# File: core/metrics.py
+
+"""
+Metrics Module.
+
+This module provides high-level statistics for the dashboard.
+It aggregates data from Connections, Alerts, and QuarantinedFiles.
+"""
 
 from datetime import datetime, timezone
 from django.db.models import Q
@@ -12,6 +18,7 @@ except Exception:
 
 
 def _start_of_day_utc():
+    """Returns the datetime for 00:00:00 UTC today."""
     now = datetime.now(timezone.utc)
     return datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
 
@@ -35,8 +42,15 @@ def connections_today():
 
 def high_alerts_count(severity_threshold=7):
     """
-    Count alerts with severity numeric or textual above threshold.
-    If severity stored as text, look for keywords 'high' or 'critical'.
+    Count valid high-severity alerts.
+    
+    Supports both numeric severity (legacy) and text-based severity ('high', 'critical').
+
+    Args:
+        severity_threshold (int): Numeric threshold for older alert records.
+
+    Returns:
+        int: Count of high severity alerts.
     """
     # numeric severity
     q_num = Q()

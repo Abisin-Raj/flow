@@ -1,4 +1,10 @@
-# File: core/light_sniffer.py
+"""
+Light Sniffer Module.
+
+This module implements a lightweight mechanism to detect network activity by polling
+system files like `/proc/net/tcp` and `/proc/net/udp`. This avoids the overhead
+and permission requirements of raw sockets.
+"""
 import threading
 import time
 import logging
@@ -9,7 +15,9 @@ from core.alert_engine import create_alert_with_geo
 
 LOG = logging.getLogger("light_sniffer")
 
+# Paths to Linux procfs network tables
 TCP_PATH = "/proc/net/tcp"
+TCP6_PATH = "/proc/net/tcp6"
 UDP_PATH = "/proc/net/udp"
 
 _running = False
@@ -19,16 +27,41 @@ _seen_entries = set()
 
 
 def _parse_ip(hex_ip):
-    # hex like "0100007F" -> reverse -> 127.0.0.1
+    """
+    Parse IP address from procfs hex representation.
+    
+    Args:
+        hex_ip (str): Hex string (8-char for IPv4, 32-char for IPv6).
+        
+    Returns:
+        str: IP address string or None.
+    """
     try:
-        ip_bytes = bytes.fromhex(hex_ip)
-        ip_bytes = ip_bytes[::-1]
-        return socket.inet_ntoa(ip_bytes)
+        if len(hex_ip) == 8:
+            # IPv4: hex like "0100007F" -> reverse -> 127.0.0.1
+            ip_bytes = bytes.fromhex(hex_ip)
+            # procfs stores IP addresses in little-endian
+            ip_bytes = ip_bytes[::-1]
+            return socket.inet_ntoa(ip_bytes)
+        elif len(hex_ip) == 32:
+            # IPv6: 32-char hex, stored as 4 groups of 8 hex chars (little-endian per group)
+            # Each 8-char group needs to be byte-reversed
+            groups = [hex_ip[i:i+8] for i in range(0, 32, 8)]
+            ip_bytes = b''
+            for g in groups:
+                group_bytes = bytes.fromhex(g)
+                ip_bytes += group_bytes[::-1]
+            return socket.inet_ntop(socket.AF_INET6, ip_bytes)
+        else:
+            return None
     except Exception:
         return None
 
 
 def _parse_port(hex_port):
+    """
+    Parse port number from procfs hex representation.
+    """
     try:
         return int(hex_port, 16)
     except Exception:
@@ -36,6 +69,15 @@ def _parse_port(hex_port):
 
 
 def _read_table(path):
+    """
+    Read and parse a network table (tcp/udp) from procfs.
+
+    Args:
+        path (str): Path to the proc file (e.g., /proc/net/tcp).
+
+    Returns:
+        list: A list of tuples (local_ip, local_port, remote_ip, remote_port, state).
+    """
     results = []
     try:
         with open(path) as f:
@@ -123,11 +165,12 @@ def _worker(poll_interval=1):
 
     while _running:
         tcp_entries = _read_table(TCP_PATH)
+        tcp6_entries = _read_table(TCP6_PATH)
         # udp_entries = _read_table(UDP_PATH)  # keep for future use
 
         now_ts = time.time()
 
-        for lip, lp, rip, rp, state in tcp_entries:
+        for lip, lp, rip, rp, state in tcp_entries + tcp6_entries:
             # ignore invalid parses
             if not rip or not lip:
                 continue
@@ -158,6 +201,9 @@ def _worker(poll_interval=1):
 
 
 def start_light_sniffer():
+    """
+    Start the light sniffer in a background thread.
+    """
     global _running
     if _running:
         return

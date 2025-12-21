@@ -1,3 +1,16 @@
+"""
+Application Launcher.
+
+This script acts as the bootstrapper for the Flow desktop application.
+It handles:
+1.  Python path setup.
+2.  Django environment initialization.
+3.  Logging configuration.
+4.  Database maintenance (clean old data).
+5.  Starting background services (collectors, sniffers).
+6.  Starting the GUI loop.
+"""
+
 import sys
 import os
 import signal
@@ -58,6 +71,9 @@ def run_initial_cleanup(days: int = 7):
 
 
 def apply_dark_theme(app: QApplication):
+    """
+    Apply a consistent dark (Charcoal/Grey) stylesheet to the entire Qt application.
+    """
     app.setStyleSheet(
         """
         QMainWindow {
@@ -117,6 +133,14 @@ def show_startup_notice(parent) -> bool:
 
 
 def start_background_services():
+    """
+    Initialize and start all non-GUI threads/processes.
+    
+    Includes:
+    - Connection Collector (ss/netstat polling).
+    - Folder Watcher (file integrity).
+    - Packet Sniffer (raw socket, if enabled).
+    """
     from core.collectors import start_collectors
     from core.folder_watcher import start_folder_watcher
     from core.packet_sniffer import start_packet_sniffer
@@ -143,6 +167,12 @@ def start_background_services():
 
 
 def start_notifications(main_window):
+    """
+    Start the alert monitoring thread and link it to the notification manager.
+    
+    This bridges the backend (DB alerts) with the frontend (Toast/Tray notifications).
+    Also triggers auto-mitigation for new alerts.
+    """
     try:
         from desktop_front.notification_manager import NotificationManager
         from desktop_front.alert_watcher import AlertWatcher

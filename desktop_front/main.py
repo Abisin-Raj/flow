@@ -1,3 +1,10 @@
+"""
+Main GUI Entry Point (PyQt6).
+
+This module defines the main application window (`FlowWindow`) and the `main()` execution loop.
+It assembles all the widgets (tabs) into a single cohesive interface and manages the system tray integration.
+"""
+
 import sys
 import logging
 from pathlib import Path
@@ -26,6 +33,15 @@ log = logging.getLogger(__name__)
 
 
 class FlowWindow(QMainWindow):
+    """
+    The main application window containing the tabbed interface.
+    
+    Responsibilities:
+    1. Initialize all feature widgets (Dashboard, Connections, Alerts, etc.).
+    2. Manage the tab layout.
+    3. Initialize and manage the System Tray icon and menu.
+    4. Handle window lifecycle events (close to tray, etc.).
+    """
     def __init__(self):
         super().__init__()
 
@@ -76,10 +92,15 @@ class FlowWindow(QMainWindow):
         self._create_system_tray()
 
     def _on_tab_changed(self, index):
+        """Log tab changes for debugging usage patterns."""
         tab_name = self.tabs.tabText(index)
         log.info(f"Tab changed to index {index}: {tab_name}")
 
     def _create_system_tray(self):
+        """
+        Setup the system tray icon with a context menu (Open, Hide, Quit).
+        Attempts to locate the icon in various standard locations.
+        """
         # Try system-wide icon first (when installed)
         icon_path = Path("/usr/share/pixmaps/flow.png")
         if not icon_path.exists():
@@ -146,18 +167,23 @@ class FlowWindow(QMainWindow):
 
 
 def main():
+    """
+    Standard PyQt6 application entry point.
+    Initializes the app, window, and notification manager.
+    """
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     app = QApplication(sys.argv)
 
     win = FlowWindow()
     win.show()
 
+    # Initialize Qt-native notification manager
     try:
         from desktop_front.notification_manager import NotificationManager
-
-        NotificationManager(win.tray_icon)
-    except Exception:
-        pass
+        win.notification_manager = NotificationManager(win.tray_icon)
+    except Exception as e:
+        log.warning(f"Could not initialize notification manager: {e}")
+        win.notification_manager = None
 
     sys.exit(app.exec())
 

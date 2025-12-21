@@ -1,4 +1,14 @@
-# File: core/alert_engine.py
+"""
+Alert Engine Module.
+
+This module acts as the central hub for creating, processing, and saving alerts.
+It handles:
+1.  Mapping alert data to the database model.
+2.  Enriching alerts with geolocation data.
+3.  Classifying network scans (fast, brute, stealth).
+4.  Triggering auto-mitigation actions upon alert creation.
+"""
+
 import logging
 import time
 from ipaddress import ip_address
@@ -36,8 +46,15 @@ def _get_field_map():
 
 def classify_scan(src_ip: str, events: list, now_ts: float = None):
     """
-    Classify scan type from events (list of (timestamp, port)).
-    Returns one of: fast, brute, stealth, local, unknown.
+    Classify the type of network scan based on the timing and pattern of events.
+
+    Args:
+        src_ip (str): The source IP address performing the scan.
+        events (list): A list of tuples (timestamp, port).
+        now_ts (float, optional): Current timestamp.
+
+    Returns:
+        str: One of 'fast', 'brute', 'stealth', 'local', or 'unknown'.
     """
     if now_ts is None:
         now_ts = time.time()
@@ -91,12 +108,30 @@ def create_alert_with_geo(
     **kwargs,
 ) -> Alert | None:
     """
-    Central alert creator with:
-    - ignore-my-ip and ignore-private logic
-    - geo lookup
-    - flexible field handling
-    """
+    Create, save, and process a new alert.
 
+    This function performs several key steps:
+    1.  Checks if the IP is ignored (allowlisted/private).
+    2.  Instantiates an Alert model.
+    3.  Populates standard fields (src_ip, message, severity, etc.).
+    4.  Populates extra fields via kwargs.
+    5.  Performs Geolocation lookup to add country/city/lat/lon.
+    6.  Saves the alert to the database.
+    7.  Triggers the auto-mitigator to potentially block the IP.
+
+    Args:
+        src_ip (str): Source IP address.
+        message (str): Alert description.
+        severity (str): Alert severity (low, medium, high, critical).
+        category (str): Alert category (e.g., port scan, malware).
+        alert_type (str): Specific type string.
+        connection (Connection): Related Connection object if any.
+        **kwargs: Additional fields to map to the Alert model.
+
+    Returns:
+        Alert: The saved Alert object, or None if creation failed or IP was ignored.
+    """
+    # Check if this IP should be ignored based on global settings
     if src_ip and settings_api.is_ip_ignored(src_ip):
         # skip trusted or local IPs
         return None
@@ -193,7 +228,21 @@ def create_alert_for_connection(
     src_ip=None, dst_ip=None, dst_port=None, message=None, severity=None, **extra
 ):
     """
-    Backwards-compatible wrapper used by other modules.
+    Wrapper for `create_alert_with_geo` to support legacy call signatures involving specific connection details.
+
+    It normalizes field names (e.g., `dstport` -> `dst_port`) and handles
+    process-specific fields like PID and process name.
+
+    Args:
+        src_ip (str): Source IP.
+        dst_ip (str): Destination IP.
+        dst_port (int): Destination Port.
+        message (str): Alert message.
+        severity (str): Severity level.
+        **extra: Additional arguments passed to `create_alert_with_geo`.
+
+    Returns:
+        Alert: The created alert object.
     """
     payload = {}
     if src_ip is not None:

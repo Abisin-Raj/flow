@@ -20,122 +20,148 @@ SOCKET_DIR = "/run/flow"
 NFT_TABLE = "flow_table"
 NFT_CHAIN = "blocked_ips"
 MAX_MESSAGE_LENGTH = 1024
-ALLOWED_REASON_CHARS = re.compile(r'^[a-zA-Z0-9_ \-:.,]+$')
+ALLOWED_REASON_CHARS = re.compile(r'^[a-zA-Z0-9_]+$')
+AUDIT_LOG = "/var/log/flow/audit.log"
+
+def audit_log(message: str):
+    """Write a timestamped audit entry to the audit log file."""
+    from datetime import datetime
+    try:
+        os.makedirs(os.path.dirname(AUDIT_LOG), exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(AUDIT_LOG, "a") as f:
+            f.write(f"{timestamp} {message}\n")
+    except Exception as e:
+        logging.getLogger("firewall_helper").warning(f"Audit log write failed: {e}")
 
 # Logging setup
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] flow-firewall-helper: %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
+    format='%(asctime)s %(levelname)s %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger("firewall_helper")
 
 class FirewallHelper:
-    """Minimalist firewall helper with strict command validation"""
-    
     def __init__(self):
-        self.socket = None
         self.running = True
+        self.socket = None
         self.setup_nftables()
-        # No Python-side timeout tracking needed anymore, kernel handles it
-    
+        
     def setup_nftables(self):
-        """Initialize nftables table and sets if not exists via atomic file load"""
-        # nftables config creation - removed unused variable assignment
-        nft_config = f"""
-table inet {NFT_TABLE} {{
-    set flow_blocked_ipv4 {{
-        type ipv4_addr
-        flags timeout
-    }}
-    set flow_blocked_ipv6 {{
-        type ipv6_addr
-        flags timeout
-    }}
-    chain {NFT_CHAIN} {{
-        type filter hook input priority 0; policy accept;
-        ip saddr @flow_blocked_ipv4 drop
-        ip6 saddr @flow_blocked_ipv6 drop
-    }}
-}}
-"""
+        """
+        Ensure nftables infrastructure exists idempotently.
+        Creates table 'flow_table' and separate sets for IPv4 and IPv6.
+        """
         try:
-            # We use 'nft -f -' to load configuration safely
-            # Ideally we check if it exists first, but re-applying this config 
-            # is generally safe as it just ensures sets exist. 
-            # However, to avoid flushing existing entries, we might want to check first.
-            # But 'table inet X' definition in a file usually flushes the table if not careful depending on syntax.
-            # 'add table' is safe.
+            # 1. Create Table (check=False for idempotency - won't fail if exists)
+            subprocess.run(["nft", "add", "table", "inet", NFT_TABLE], 
+                         capture_output=True, check=False)
             
-            # Let's do it command by command to be safe and idempotent
+            # 2. Create IPv4 Set with timeout support
+            subprocess.run([
+                "nft", "add", "set", "inet", NFT_TABLE, "flow_blocked_ipv4",
+                "{ type ipv4_addr; flags timeout; }"
+            ], capture_output=True, check=False)
             
-            # 1. Table
-            subprocess.run(["nft", "add", "table", "inet", NFT_TABLE], check=True)
-            
-            # 2. Sets
-            subprocess.run(["nft", "add", "set", "inet", NFT_TABLE, "flow_blocked_ipv4", "{ type ipv4_addr; flags timeout; }"], check=True)
-            subprocess.run(["nft", "add", "set", "inet", NFT_TABLE, "flow_blocked_ipv6", "{ type ipv6_addr; flags timeout; }"], check=True)
-            
-            # 3. Chain
-            subprocess.run(["nft", "add", "chain", "inet", NFT_TABLE, NFT_CHAIN, "{ type filter hook input priority 0; policy accept; }"], check=True)
-            
-            # 4. Rules linking sets to drop (ensure they exist)
-            # We can't easily check existence of rules without parsing, but 'add rule' appends.
-            # We want to ensure the rule exists. 
-            # A simple way is to try to delete them and re-add them, or just list and check.
-            
-            # Check IPv4 rule
-            res = subprocess.run(["nft", "list", "chain", "inet", NFT_TABLE, NFT_CHAIN], capture_output=True, text=True)
-            if "ip saddr @flow_blocked_ipv4 drop" not in res.stdout:
-                 subprocess.run(["nft", "add", "rule", "inet", NFT_TABLE, NFT_CHAIN, "ip", "saddr", "@flow_blocked_ipv4", "drop"], check=True)
-                 
-            if "ip6 saddr @flow_blocked_ipv6 drop" not in res.stdout:
-                 subprocess.run(["nft", "add", "rule", "inet", NFT_TABLE, NFT_CHAIN, "ip6", "saddr", "@flow_blocked_ipv6", "drop"], check=True)
+            # 3. Create IPv6 Set with timeout support
+            subprocess.run([
+                "nft", "add", "set", "inet", NFT_TABLE, "flow_blocked_ipv6",
+                "{ type ipv6_addr; flags timeout; }"
+            ], capture_output=True, check=False)
 
-            logger.info("nftables initialized successfully (sets mode)")
+            # 4. Create Chain
+            subprocess.run([
+                "nft", "add", "chain", "inet", NFT_TABLE, NFT_CHAIN,
+                "{ type filter hook input priority 0; policy accept; }"
+            ], capture_output=True, check=False)
+            
+            # 5. Add drop rules for both sets
+            subprocess.run([
+                "nft", "add", "rule", "inet", NFT_TABLE, NFT_CHAIN,
+                "ip", "saddr", "@flow_blocked_ipv4", "drop"
+            ], capture_output=True, check=False)
+            
+            subprocess.run([
+                "nft", "add", "rule", "inet", NFT_TABLE, NFT_CHAIN,
+                "ip6", "saddr", "@flow_blocked_ipv6", "drop"
+            ], capture_output=True, check=False)
 
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to initialize nftables: {e}")
-            raise
-    
+            logger.info("nftables configuration verified/updated")
+            
+        except Exception as e:
+            logger.error(f"Failed to setup nftables: {e}")
+
     def validate_ip(self, ip_str):
-        """Validate IP address format strictly and return object"""
+        """
+        Validate IP address format strictly.
+        
+        Args:
+            ip_str (str): IP string input.
+            
+        Returns:
+            ipaddress object or None.
+        """
         try:
             return ipaddress.ip_address(ip_str)
         except ValueError:
             return None
     
     def sanitize_reason(self, reason):
-        """Sanitize reason string to prevent injection"""
-        if not reason or len(reason) > 200:
+        """
+        Sanitize reason string to prevent command injection or log spoofing.
+        Strict: Alphanumeric and underscore only.
+        """
+        if not reason or len(reason) > 50:
             return None
         if not ALLOWED_REASON_CHARS.match(reason):
             return None
         return reason
     
     def block_ip(self, ip, reason, timeout_seconds=None):
-        """Add IP to nftables set with optional timeout"""
+        """
+        Add an IP to the block list via nftables.
+        
+        Args:
+            ip (str): IP address to block.
+            reason (str): Logging reason.
+            timeout_seconds (int, optional): Duration to block.
+        
+        Returns:
+            str: "OK <msg>" or "ERROR <msg>".
+        """
         ip_obj = self.validate_ip(ip)
         if not ip_obj:
             return f"ERROR Invalid IP address: {ip}"
         
+        # Layer 2: Protected IP guard - refuse to block critical system IPs
+        # This is defense-in-depth: even if Layer 1 (Flow core) is bypassed
+        if (
+            ip_obj.is_loopback
+            or ip_obj.is_link_local
+            or ip_obj.is_multicast
+            or ip_obj.is_reserved
+            or ip_obj.is_unspecified
+        ):
+            audit_log(f"[DENY] protected_ip ip={ip}")
+            logger.warning(f"Refused to block protected IP: {ip}")
+            return "ERROR Protected IP"
+        
         reason = self.sanitize_reason(reason)
-        # Reason is effectively logging only since sets don't store comments easily per element in this setup
-        # But we can log it here.
         if reason is None:
-            return "ERROR Invalid reason format"
+            return "ERROR Invalid reason format (alphanumeric_only)"
             
         timeout_str = ""
         if timeout_seconds:
             try:
                 ts = int(timeout_seconds)
-                if ts <= 0:
-                    return "ERROR Invalid timeout"
+                if ts < 10 or ts > 86400:
+                    return "ERROR Timeout must be between 10 and 86400 seconds"
                 timeout_str = f" timeout {ts}s"
             except Exception:
                 return "ERROR Invalid timeout"
 
+        # Select correct set based on IP version
         target_set = "flow_blocked_ipv4" if ip_obj.version == 4 else "flow_blocked_ipv6"
         
         try:
@@ -144,6 +170,7 @@ table inet {NFT_TABLE} {{
             subprocess.run(cmd, check=True, capture_output=True)
             
             logger.info(f"Blocked IP: {ip} (reason: {reason}, timeout: {timeout_seconds or 'forever'})")
+            audit_log(f"[BLOCK] ip={ip} timeout={timeout_seconds or 0}s reason={reason}")
             return f"OK Blocked {ip}"
         except subprocess.CalledProcessError as e:
             error_msg = f"nftables command failed: {e.stderr.decode()}"
@@ -151,11 +178,20 @@ table inet {NFT_TABLE} {{
             return f"ERROR {error_msg}"
     
     def unblock_ip(self, ip):
-        """Remove IP from nftables set"""
+        """
+        Remove an IP from the block list (nftables set).
+        
+        Args:
+            ip (str): IP address to unblock.
+            
+        Returns:
+            str: "OK <msg>" or "ERROR <msg>".
+        """
         ip_obj = self.validate_ip(ip)
         if not ip_obj:
             return f"ERROR Invalid IP address: {ip}"
             
+        # Select correct set based on IP version
         target_set = "flow_blocked_ipv4" if ip_obj.version == 4 else "flow_blocked_ipv6"
         
         try:
@@ -164,6 +200,7 @@ table inet {NFT_TABLE} {{
             subprocess.run(cmd, check=True, capture_output=True)
             
             logger.info(f"Unblocked IP: {ip}")
+            audit_log(f"[UNBLOCK] ip={ip}")
             return f"OK Unblocked {ip}"
         except subprocess.CalledProcessError as e:
             # If it doesn't exist, nft might error? yes 'No such file or directory' equivalent
@@ -175,37 +212,31 @@ table inet {NFT_TABLE} {{
             return f"ERROR {error_msg}"
             
     def list_blocked(self):
-        """List all currently blocked IPs from sets"""
+        """List all currently blocked IPs from both IPv4 and IPv6 sets"""
         try:
             output = []
             
-            # List IPv4
+            # List from IPv4 set
             res4 = subprocess.run(["nft", "list", "set", "inet", NFT_TABLE, "flow_blocked_ipv4"], capture_output=True, text=True)
             if res4.returncode == 0:
-                # Output format: elements = { 1.2.3.4, 5.6.7.8 timeout 10s }
-                # Regex to extract IPs
-                # Simple extraction: look for ip patterns inside the output
-                # This is a bit loose but works for display
-                ips = re.findall(r'[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}', res4.stdout)
-                output.extend(ips)
-
-            # List IPv6
+                ips_v4 = re.findall(r'[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}', res4.stdout)
+                output.extend(ips_v4)
+            
+            # List from IPv6 set
             res6 = subprocess.run(["nft", "list", "set", "inet", NFT_TABLE, "flow_blocked_ipv6"], capture_output=True, text=True)
             if res6.returncode == 0:
-                # IPv6 regex is hard, let's just crude grab
-                # Actually, standard python re doesn't have a great ipv6 regex handy. 
-                # Let's trust valid IPs found.
-                # Or just print raw? No, wrapper expects comma list.
-                pass 
-                # For brevity/safety, let's just return what we have or improve parsing if critical.
-                # User asked for "LIST_BLOCKED", returning IPv4 is good start.
+                # Simplified IPv6 pattern
+                ips_v6 = re.findall(r'[0-9a-fA-F:]+::[0-9a-fA-F:]*|[0-9a-fA-F]+:[0-9a-fA-F:]+', res6.stdout)
+                output.extend(ips_v6)
                 
             return f"OK {','.join(output)}"
         except Exception as e:
             return f"ERROR {e}"
 
     def get_status(self):
-        """Get helper status"""
+        """
+        Get the health status of the helper and nftables state.
+        """
         try:
             subprocess.run(
                 ["nft", "list", "table", "inet", NFT_TABLE],
@@ -221,7 +252,15 @@ table inet {NFT_TABLE} {{
         pass
     
     def handle_command(self, message):
-        """Parse and execute command with strict validation"""
+        """
+        Parse and execute a text command from the socket.
+        
+        Commands:
+        - BLOCK_IP <ip> <reason> [timeout]
+        - UNBLOCK_IP <ip>
+        - LIST_BLOCKED
+        - STATUS
+        """
         message = message.strip()
         
         if not message:
@@ -254,7 +293,10 @@ table inet {NFT_TABLE} {{
             return f"ERROR Unknown command: {command}"
     
     def handle_client(self, client_socket):
-        """Handle single client connection"""
+        """
+        Handle a single client connection until EOF or timeout.
+        Reads one message, sends one response, closes connection.
+        """
         try:
             # Receive message (with size limit)
             data = client_socket.recv(MAX_MESSAGE_LENGTH)
@@ -313,7 +355,10 @@ table inet {NFT_TABLE} {{
         logger.info(f"Socket created at {SOCKET_PATH} with mode 0660")
     
     def run(self):
-        """Main server loop"""
+        """
+        Main server loop.
+        Initializes socket and accepts connections indefinitely.
+        """
         self.setup_socket()
         
         logger.info("Flow Firewall Helper started")

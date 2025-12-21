@@ -1,3 +1,11 @@
+"""
+Auto Mitigator Module.
+
+This module automates the response to threats by evaluating the behavior of IPs
+based on recent alerts. If an IP exceeds a threat score threshold, it is automatically
+blocked via the firewall.
+"""
+
 import logging
 import ipaddress
 from datetime import timedelta
@@ -13,7 +21,21 @@ BLOCK_THRESHOLD = 5
 TRUSTED_PROCESSES = ["chrome", "firefox", "spotify", "slack", "zoom"] # Basic allowlist
 
 def is_valid_block_candidate(ip: str) -> bool:
-    """Check if IP is valid for auto-blocking"""
+    """
+    Check if an IP address is a valid candidate for auto-blocking.
+    
+    Excludes:
+    - None/Empty IPs
+    - Loopback addresses
+    - Private IPs (unless configured otherwise)
+    - Already blocked IPs
+
+    Args:
+        ip (str): IP address to check.
+
+    Returns:
+        bool: True if blockable, False otherwise.
+    """
     if not ip:
         return False
         
@@ -44,11 +66,28 @@ def is_valid_block_candidate(ip: str) -> bool:
     return True
 
 def recent_alerts(ip: str):
+    """
+    Retrieve alerts for an IP from the last 60 seconds.
+    """
     cutoff = timezone.now() - timedelta(seconds=60)
     return Alert.objects.filter(src_ip=ip, timestamp__gte=cutoff)
 
 def calculate_score(ip: str) -> int:
-    """Calculate threat score based on recent activity"""
+    """
+    Calculate a threat score based on recent activity frequency and type.
+
+    Scoring logic:
+    - High volume of alerts (>=5) adds points.
+    - Multiple distinct destination ports (>=3) adds points (scanning behavior).
+    - Port scan alerts specifically add points.
+    - Alerts from untrusted processes add points.
+
+    Args:
+        ip (str): IP to score.
+
+    Returns:
+        int: Threat score.
+    """
     alerts = recent_alerts(ip)
     score = 0
     
@@ -75,7 +114,16 @@ def calculate_score(ip: str) -> int:
     return score
 
 def get_block_timeout(ip: str) -> int:
-    """Progressive timeout based on history"""
+    """
+    Determine duration to block an IP based on its block history.
+    Progressive discipline: 1st time=1min, 2nd=5mins, 3rd+=30mins.
+
+    Args:
+        ip (str): IP address.
+
+    Returns:
+        int: Timeout in seconds.
+    """
     history = BlockedIp.objects.filter(ip=ip).count()
     
     if history == 0:
@@ -86,8 +134,16 @@ def get_block_timeout(ip: str) -> int:
 
 def evaluate_ip(ip: str) -> str:
     """
-    Main entry point for decision.
-    Returns: 'blocked', 'ignored', 'observed'
+    Evaluate an IP for auto-blocking.
+    
+    If the calculated score exceeds `BLOCK_THRESHOLD`, the IP is blocked
+    using the firewall module and recorded in BlockedIp model.
+
+    Args:
+        ip (str): IP address to evaluate.
+
+    Returns:
+        str: Status ('blocked', 'ignored', 'observed').
     """
     if not is_valid_block_candidate(ip):
         return "ignored"
@@ -111,7 +167,17 @@ def evaluate_ip(ip: str) -> str:
 
 def process_alert(alert: Alert):
     """
-    Called by alert_engine after saving a new alert.
+    Trigger auto-mitigation checks for a newly created alert.
+    
+    Uses block_policy to determine appropriate block duration based on:
+    - Alert severity
+    - Alert type
+    - Repeat offender history
+    
+    This is the hook called by `alert_engine.create_alert_with_geo`.
+
+    Args:
+        alert (Alert): The alert instance.
     """
     try:
         # Global switch check
@@ -119,8 +185,32 @@ def process_alert(alert: Alert):
             return
 
         src_ip = alert.src_ip
-        if src_ip:
-            evaluate_ip(src_ip)
+        if not src_ip:
+            return
+            
+        if not is_valid_block_candidate(src_ip):
+            return
+        
+        # Use block policy for timeout calculation with explanation
+        from core.block_policy import calculate_block_timeout, format_explanation
+        timeout, explanation = calculate_block_timeout(alert)
+        
+        log.info(f"Policy-driven block: {src_ip} for {timeout}s | {explanation}")
+        
+        ok, msg = firewall.block_ip(src_ip, timeout_seconds=timeout)
+        if ok:
+            # Store explanation in alert message for UI/audit
+            explanation_text = format_explanation(explanation)
+            alert.message = (alert.message or "") + explanation_text
+            alert.save(update_fields=["message"])
+            
+            BlockedIp.objects.create(
+                ip=src_ip, 
+                reason=f"policy-{alert.severity or 'medium'}"
+            )
+            log.info(f"Blocked {src_ip} with explanation stored")
+        else:
+            log.error(f"Failed to block {src_ip}: {msg}")
             
     except Exception as e:
         log.exception("Error in auto-mitigation: %s", e)

@@ -1,70 +1,105 @@
-# desktop_front/notification_manager.py
-import os
+"""
+Notification Manager (Qt-native).
+
+Pure Qt implementation using QSystemTrayIcon.showMessage().
+No DBus, no notify-send, no subprocess calls.
+
+This is the correct way to show desktop notifications from a Qt app.
+"""
+
+import time
 import logging
-import subprocess
 from PyQt6.QtWidgets import QSystemTrayIcon
+from PyQt6.QtCore import QObject
 
 log = logging.getLogger("desktop_front.notification_manager")
 
 
-def send_notification(title, message):
-    try:
-        dbus_addr = os.environ.get("DBUS_SESSION_BUS_ADDRESS")
-        if not dbus_addr:
-            raise RuntimeError("No DBUS_SESSION_BUS_ADDRESS in environment")
-
-        cmd = [
-            "notify-send",
-            "--icon=dialog-warning",
-            title,
-            message
-        ]
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            env={"DBUS_SESSION_BUS_ADDRESS": dbus_addr}
-        )
-
-        if result.returncode != 0:
-            raise RuntimeError(
-                f"notify-send failed code={result.returncode} stderr={result.stderr.strip()}"
-            )
-
-        logging.info(f"Notification sent successfully: {title}")
-
-    except Exception as e:
-        logging.error(f"Notification error: {e}", exc_info=True)
-
-
-class NotificationManager:
+class NotificationManager(QObject):
+    """
+    Qt-native notification manager using QSystemTrayIcon.
+    
+    Features:
+    - Rate limiting to prevent spam
+    - Severity-aware icons
+    - No external dependencies
+    """
+    
     def __init__(self, tray_icon: QSystemTrayIcon):
-        self.tray = tray_icon
-        log.info("NotificationManager initialized, tray_icon=%s", tray_icon)
+        super().__init__()
+        self.tray_icon = tray_icon
+        self.last_sent = {}  # alert_key -> timestamp
+        self.cooldown_seconds = 10  # prevent spam
+        log.info("NotificationManager initialized (Qt-native)")
 
-    def show_alert(self, alert_obj):
-        title = "Flow Alert"
-        log.info("show_alert called with alert_obj=%s", alert_obj)
-
-        if not alert_obj:
-            log.warning("show_alert: no alert_obj, returning")
+    def notify_alert(self, title: str, message: str, severity: str = "medium"):
+        """
+        Show a notification via system tray.
+        
+        Args:
+            title: Notification title
+            message: Notification body text
+            severity: low, medium, high, or critical
+        """
+        if not self.tray_icon or not self.tray_icon.isVisible():
+            log.debug("Tray icon not available, skipping notification")
             return
 
-        sev = getattr(alert_obj, "severity", "unknown")
-        msg_text = getattr(alert_obj, "message", "") or "No details"
+        # Rate limiting - prevent duplicate notifications
+        key = f"{title}:{message[:50]}"
+        now = time.time()
 
-        body = f"{sev.upper()}: {msg_text}"
-        if len(body) > 200:
-            body = body[:197] + "..."
+        if key in self.last_sent:
+            if now - self.last_sent[key] < self.cooldown_seconds:
+                log.debug(f"Rate limited notification: {title}")
+                return
 
-        # Try system tray first (works when app runs in user session)
+        self.last_sent[key] = now
+
+        # Map severity to Qt icon
+        severity_lower = (severity or "medium").lower()
+        icon = QSystemTrayIcon.MessageIcon.Information
+        
+        if severity_lower == "high":
+            icon = QSystemTrayIcon.MessageIcon.Warning
+        elif severity_lower == "critical":
+            icon = QSystemTrayIcon.MessageIcon.Critical
+
+        # Truncate long messages
+        if len(message) > 200:
+            message = message[:197] + "..."
+
         try:
-            if self.tray:
-                self.tray.showMessage(title, body, QSystemTrayIcon.MessageIcon.Critical, 8000)
-                log.info("Tray notification sent")
-        except Exception:
-            log.exception("Tray notification failed")
+            self.tray_icon.showMessage(title, message, icon, 8000)
+            log.info(f"Notification sent: {title} [{severity_lower}]")
+        except Exception as e:
+            log.error(f"Failed to show notification: {e}")
 
-        # Always attempt notify-send as fallback (works when app runs as root)
-        send_notification(title, body)
+    def show_alert(self, alert_obj):
+        """
+        Convenience method to show notification from an Alert model instance.
+        """
+        if not alert_obj:
+            return
+
+        title = f"Flow Alert: {alert_obj.alert_type or 'Security Event'}"
+        message = alert_obj.message or "No details available"
+        severity = alert_obj.severity or "medium"
+        
+        self.notify_alert(title, message, severity)
+
+    def notify_block(self, ip: str, duration: int):
+        """Notify user that an IP was blocked."""
+        self.notify_alert(
+            "IP Blocked",
+            f"Blocked {ip} for {duration} seconds",
+            "high"
+        )
+
+    def notify_unblock(self, ip: str):
+        """Notify user that an IP was unblocked."""
+        self.notify_alert(
+            "IP Unblocked",
+            f"Unblocked {ip}",
+            "low"
+        )

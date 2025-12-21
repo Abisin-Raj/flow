@@ -1,3 +1,13 @@
+"""
+Settings API Module.
+
+This module provides a unified interface for accessing and key-value application settings.
+It sits on top of the `AppSetting` model and implements:
+1.  In-memory caching with TTL to reduce DB hits.
+2.  Type conversion helpers (bool, int, list).
+3.  Logic for IP ignore lists and private IP detection.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -60,6 +70,12 @@ _CACHE_TTL_SECONDS = 5.0
 
 
 def _load_cache(force: bool = False) -> None:
+    """
+    Refresh the in-memory settings cache from the database.
+    
+    Args:
+        force (bool): If True, ignore TTL and force reload.
+    """
     global _cache_at, _cache
     now = time.time()
     with _cache_lock:
@@ -82,6 +98,9 @@ def _load_cache(force: bool = False) -> None:
 
 
 def get(key: str, default: Optional[str] = None) -> Optional[str]:
+    """
+    Retrieve a raw string setting value.
+    """
     _load_cache()
     if key in _cache:
         return _cache[key]
@@ -91,6 +110,9 @@ def get(key: str, default: Optional[str] = None) -> Optional[str]:
 
 
 def set_value(key: str, value: str) -> None:
+    """
+    Write a setting to the DB and update the cache.
+    """
     value = "" if value is None else str(value)
     
     try:
@@ -131,6 +153,10 @@ def set_bulk(items: Dict[str, str]) -> None:
 
 
 def get_detector_settings() -> Dict[str, int]:
+    """
+    Get a dictionary of all detector tuning parameters, cast to integers.
+    Uses defaults if specific keys are missing.
+    """
     _load_cache()
 
     def _int(key: str, fallback: int) -> int:
@@ -163,10 +189,22 @@ def firewall_allowed() -> bool:
     return get_bool("allow_firewall_actions")
 
 
-def get_list(key: str) -> List[str]:
+def is_firewall_dry_run() -> bool:
+    """
+    Check if firewall is in dry-run mode.
+    In dry-run mode, Flow logs block decisions but doesn't actually touch nftables.
+    Useful for testing, demos, and safe validation.
+    
+    Enable by setting AppSetting: key='firewall_dry_run', value='true'
+    """
+    return get_bool("firewall_dry_run")
+
+
+def get_list(key: str) -> list[str]:
     val = get(key, "") or ""
     items = [p.strip() for p in val.split(",") if p.strip()]
     return items
+
 
 
 def get_port_list(key: str, default: str = "") -> list[int]:
@@ -230,6 +268,9 @@ def detect_local_ip() -> str:
     """
     Best-effort guess of primary local IP.
     This is used only for "Ignore my IP" UI.
+    
+    It tries to connect to a public IP (8.8.8.8) to see which interface
+    is picked by the OS routing table.
     """
     # try connected UDP trick
     try:
@@ -286,6 +327,13 @@ def is_private_ip(ip: str) -> bool:
 
 def is_ip_ignored(ip: Optional[str]) -> bool:
     """
+    Check if an IP should be ignored (allowed) based on current settings.
+    
+    Checks:
+    1. Static allowlist.
+    2. "Ignore My IP" dynamic check.
+    3. "Ignore Private Ranges" check.
+    
     Used by detectors and alert engine to skip alerts on trusted IPs.
     """
     if not ip:

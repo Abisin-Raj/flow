@@ -1,3 +1,14 @@
+"""
+File Scanner Module.
+
+This module implements file analysis capabilities:
+1.  SHA256 hashing.
+2.  TLSH fuzzy hashing (if available).
+3.  Signature matching (Exact and Fuzzy) against the database.
+4.  Heuristic detection for script-based reverse shells.
+5.  Manual local database lookup (`malware_db.json`).
+"""
+
 import hashlib
 import json
 import logging
@@ -23,9 +34,16 @@ _MANUAL_HASHES = None
 
 def _reverse_shell_heuristic(path: str):
     """
-    Simple heuristic detector for script-based reverse shells.
-    Looks for classic patterns in text files.
-    Returns (is_suspicious: bool, reason: str).
+    Heuristic, pattern-based detector for reverse shell scripts.
+    
+    Checks for common one-liners (bash TCP, netcat -e, powershell).
+    Limited to small text files to avoid performance impact.
+
+    Args:
+        path (str): Path to the file.
+
+    Returns:
+        tuple: (is_suspicious: bool, reason: str)
     """
     try:
         # Only inspect reasonably small files for this demo
@@ -58,6 +76,10 @@ def _reverse_shell_heuristic(path: str):
 
 
 def _load_manual_hashes():
+    """
+    Load the local manual malware database from JSON.
+    Memoizes the result in `_MANUAL_HASHES`.
+    """
     global _MANUAL_HASHES
     if _MANUAL_HASHES is not None:
         return _MANUAL_HASHES
@@ -136,9 +158,17 @@ def _lookup_signature_by_sha(sha256: str):
 
 def _lookup_signature_by_fuzzy(tlsh_string: str, max_distance: int = 50):
     """
-    Fuzzy match using TLSH.
-    We use MalwareSignature.tlsh field as the TLSH string storage.
-    Returns (signature, distance) or (None, None).
+    Search for a malware signature using TLSH fuzzy hash matching.
+    
+    It iterates over all signatures that have a TLSH hash and calculates
+    the distance. Returns the best match if within `max_distance`.
+
+    Args:
+        tlsh_string (str): The TLSH hash of the file.
+        max_distance (int): The maximum distance to consider a match (0=exact, higher=looser).
+
+    Returns:
+        tuple: (signature_object, distance) or (None, None).
     """
     if not tlsh_string or tlsh is None:
         return None, None
@@ -184,19 +214,30 @@ def _lookup_signature_by_fuzzy(tlsh_string: str, max_distance: int = 50):
 
 def scan_file(path: str, progress_cb=None) -> dict:
     """
-    Scan a single file and return a result dict:
-    {
-        "is_malicious": bool,
-        "reason": str,
-        "sha256": str,
-        "tlsh": str,
-        "match_type": "exact" | "fuzzy" | "manual" | "none",
-        "match_distance": int | None,
-        "matched_signature": MalwareSignature | None,
-        "severity": str,
-        "name": str | None,
-    }
-    progress_cb, if given, is called with integer percentages 0–100.
+    Perform a comprehensive scan on a single file.
+
+    Steps:
+    1.  Calculate SHA256.
+    2.  Check manual local DB.
+    3.  Check exact signature match in main DB.
+    4.  Calculate TLSH and check fuzzy match.
+    5.  Run heuristic checks.
+
+    Args:
+        path (str): Path to the file.
+        progress_cb (callable, optional): Callback which receives percent int (0-100).
+
+    Returns:
+        dict: Scan result containing:
+            - is_malicious: bool
+            - reason: str
+            - sha256: str
+            - tlsh: str
+            - match_type: str ("exact", "fuzzy", "manual", "none")
+            - match_distance: int (for fuzzy)
+            - matched_signature: obj
+            - severity: str
+            - name: str
     """
     if progress_cb:
         progress_cb(1)

@@ -1,4 +1,10 @@
-# File: core/geolocation.py
+"""
+Geolocation Utility.
+
+This module provides IP-to-Location mapping using a local GeoLite2 database.
+It is used to enrich Alert and Connection data with country and city information.
+"""
+
 import os
 import logging
 import ipaddress
@@ -9,12 +15,17 @@ from geoip2.errors import AddressNotFoundError
 log = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(__file__)
+# Path to the bundled GeoLite2 City database
 DB_PATH = os.path.join(BASE_DIR, "..", "data", "GeoLite2-City.mmdb")
 
 _reader = None
 
 
 def _open_reader():
+    """
+    Lazy loader for the GeoIP2 database reader.
+    Keeps the reader open for performance.
+    """
     global _reader
     if _reader is None:
         if not os.path.exists(DB_PATH):
@@ -27,8 +38,15 @@ def _open_reader():
 
 def get_geo(ip):
     """
-    Return a dict with keys: country, city, latitude, longitude.
-    Return None on failure or for private/local addresses.
+    Lookup geographic information for an IP address.
+
+    Args:
+        ip (str): IP address to lookup.
+
+    Returns:
+        dict: containing 'country', 'city', 'latitude', 'longitude'.
+              Returns special 'Local Network' values for private IPs.
+              Returns None on failure or if IP is not found.
     """
     # handle obvious local addresses quickly
     try:
@@ -71,6 +89,9 @@ def get_geo(ip):
 
 
 def close_reader():
+    """
+    Explicitly close the GeoIP2 reader and release the file handle.
+    """
     global _reader
     if _reader is not None:
         try:

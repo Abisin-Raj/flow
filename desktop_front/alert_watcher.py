@@ -1,3 +1,10 @@
+"""
+Alert Watcher.
+
+This module monitors the database for newly created alerts and triggers callbacks.
+It is the "glue" that allows the desktop UI to eventually notify the user of background detections.
+"""
+
 import threading
 import time
 import logging
@@ -8,6 +15,14 @@ log = logging.getLogger("desktop_front.alert_watcher")
 
 
 class AlertWatcher(threading.Thread):
+    """
+    Background thread that polls the Alert table for new entries.
+    
+    Attributes:
+        notify_func (callable): Callback to execute when a new alert is found.
+        poll_interval (int): How often (in seconds) to check DB.
+        start_from_latest (bool): If True, ignore pre-existing alerts.
+    """
     def __init__(self, notify_func, poll_interval=3, start_from_latest=True):
         super().__init__(daemon=True)
         self.notify = notify_func
@@ -22,6 +37,10 @@ class AlertWatcher(threading.Thread):
         )
 
     def run(self):
+        """
+        Main polling loop.
+        Keeps track of `last_id` to ensure each alert is notified only once.
+        """
         log.info("AlertWatcher thread started")
         from django.db import connection
         while self.running:

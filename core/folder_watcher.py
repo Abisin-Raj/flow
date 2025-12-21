@@ -1,3 +1,11 @@
+"""
+Folder Watcher Service.
+
+This module monitors specific directories for new or modified files.
+When a change is detected, it triggers the file scanning logic to check for malware.
+It supports both recursive and non-recursive watching.
+"""
+
 import os
 import threading
 import time
@@ -8,11 +16,19 @@ from django.db import close_old_connections
 from core.models import WatchedFolder  # noqa: E402
 from core.file_scan_service import scan_and_record
 
-_LAST_SEEN = {}
-_INITIALIZED_ROOTS = set()
+# In-memory state
+_LAST_SEEN = {}          # map of path -> modification time
+_INITIALIZED_ROOTS = set() # tracked roots to avoid re-indexing loop
 
 
 def iter_files(root: str, recursive: bool):
+    """
+    Generator yielding full paths of files in a directory.
+
+    Args:
+        root (str): Root directory path.
+        recursive (bool): If True, walk subdirectories.
+    """
     root_path = Path(root)
     if not root_path.is_dir():
         return
@@ -29,6 +45,11 @@ def iter_files(root: str, recursive: bool):
 
 
 def _index_existing_files_once(root: str, recursive: bool):
+    """
+    Establish baseline of file modification times to avoid scanning existing files
+    as "new" on startup, unless desired.
+    Currently, this just records mtimes so only FUTURE changes trigger scans.
+    """
     for path in iter_files(root, recursive):
         try:
             mtime = os.path.getmtime(path)
@@ -39,9 +60,15 @@ def _index_existing_files_once(root: str, recursive: bool):
 
 def folder_watcher_loop(interval: int = 5):
     """
-    Poll watched folders every few seconds.
-    Detect new or modified files.
-    Scan them and optionally auto quarantine.
+    Main polling loop.
+    
+    1.  Fetches enabled watch configs from DB.
+    2.  Iterates over files in watched directories.
+    3.  Compares current mtime with last seen mtime.
+    4.  Triggers `scan_and_record` if file is new or modified.
+    
+    Args:
+        interval (int): Seconds to sleep between poll cycles.
     """
     while True:
         try:
@@ -90,8 +117,8 @@ log = logging.getLogger(__name__)
 
 def initial_full_scan():
     """
-    Scan all files in enabled watched folders once at startup.
-    This catches malware that was already present before the watcher began.
+    Perform a comprehensive one-time scan of all watched folders at startup.
+    This ensures that existing malware is detected even if not modified recently.
     """
     logger = logging.getLogger("core.folder_watcher")
     try:
@@ -146,6 +173,10 @@ def initial_full_scan():
             )
 
 def scan_all_watched_folders():
+    """
+    Manually trigger a full rescan of all watched folders.
+    Useful for "Scan Now" UI buttons.
+    """
     log.info("scan_all_watched_folders: starting full rescan of watched folders")
     try:
         watched = WatchedFolder.objects.filter(enabled=True)
@@ -186,6 +217,9 @@ def _folder_watcher_thread_entry(interval: int):
 
 
 def start_folder_watcher():
+    """
+    Start the folder watcher background thread.
+    """
     t = threading.Thread(
         target=_folder_watcher_thread_entry, kwargs={"interval": 5}, daemon=True
     )

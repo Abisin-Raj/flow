@@ -22,7 +22,7 @@ Desktop notifications inform you when new high severity alerts appear.
 
 ## ARCHITECTURE
 
-Backend is Django and SQLite. Models live in `core.models`. The backend runs inside the desktop process and in management commands. There is no standalone web server for normal use.
+Backend is Django and PostgreSQL. Models live in `core.models`. The backend runs inside the desktop process and in management commands. There is no standalone web server for normal use.
 
 Frontend is PyQt6 in `desktop_front`. `start_flow.py` sets up Django, launches collectors, and starts the Qt main window.
 
@@ -36,6 +36,7 @@ File scanning code sits in `core.file_scanner` and `core.file_scan_service`. It 
 
 *   Linux system with `/proc` and `/proc/net` available.
 *   Python 3.10 or newer.
+*   PostgreSQL database server.
 *   System packages that help: `python3`, `python3-venv`, build tools, `libffi` and `openssl` headers.
 *   Python packages are listed in `requirements.txt`. Main ones are Django, PyQt6, geoip2, maxminddb, scapy, matplotlib, requests, pytest, ruff, mypy and bandit.
 *   The MaxMind GeoLite2 database file should be present at `data/GeoLite2-City.mmdb`. You must agree to the MaxMind license to use that database.

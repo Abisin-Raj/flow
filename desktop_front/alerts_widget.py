@@ -162,6 +162,11 @@ class AlertsWidget(QWidget):
         self.block_ip_btn.clicked.connect(self.on_block_source_ip)
         top_layout.addWidget(self.block_ip_btn)
 
+        # Demo Button
+        self.test_notif_btn = make_small_button("Trigger Test Alert")
+        self.test_notif_btn.clicked.connect(self.trigger_demo_notif)
+        top_layout.addWidget(self.test_notif_btn)
+
 
 
         self.table = QTableWidget()
@@ -240,6 +245,21 @@ class AlertsWidget(QWidget):
             self.timer.stop()
         if hasattr(self, "col_manager"):
             self.col_manager.save_state()
+
+    def trigger_demo_notif(self):
+        """Manually trigger a notification for demonstration."""
+        try:
+            main_window = self.window()
+            if main_window and hasattr(main_window, 'notification_manager'):
+                nm = main_window.notification_manager
+                if nm:
+                    nm.notify_alert(
+                        "DEMO ALERT", 
+                        "This alert was triggered manually for the presentation.", 
+                        "high"
+                    )
+        except Exception:
+            pass
 
     def refresh_alerts(self):
         time_field = self.field_map.get("time")

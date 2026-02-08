@@ -70,3 +70,5 @@ verify_env.py
 db_check_result.txt
 ss_output.txt
 network_drawing_guide.md
+apply_fixes_to_system.sh
+presentation.md

@@ -20,6 +20,7 @@ You can export data to CSV via the Export tab and control background services vi
 
 Desktop notifications inform you when new high severity alerts appear.
 
+
 ## ARCHITECTURE
 
 Backend is Django and PostgreSQL. Models live in `core.models`. The backend runs inside the desktop process and in management commands. There is no standalone web server for normal use.
@@ -64,6 +65,8 @@ Once installed, you can launch Flow from your application menu ("Flow Network Mo
 ```bash
 sudo flow
 ```
+
+
 
 ### Manual Development Setup
 
@@ -252,5 +255,7 @@ If Flow still asks for a password or packet sniffing doesn't work:
    ```
 
 4. **After binary updates**: Capabilities are file-specific and lost when the binary is replaced. Rerun `setcap` after any Flow updates.
+
+
 
 

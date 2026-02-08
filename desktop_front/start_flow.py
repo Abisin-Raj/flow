@@ -18,7 +18,7 @@ import logging
 from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication, QMessageBox
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, QObject, pyqtSignal
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -166,6 +166,12 @@ def start_background_services():
         logging.exception("Failed to start packet sniffer")
 
 
+class NotificationDispatcher(QObject):
+    """Bridge to send signals from threads to GUI."""
+    notify_signal = pyqtSignal(object)
+
+log = logging.getLogger("desktop_front.start_flow")
+
 def start_notifications(main_window):
     """
     Start the alert monitoring thread and link it to the notification manager.
@@ -176,13 +182,20 @@ def start_notifications(main_window):
     try:
         from desktop_front.notification_manager import NotificationManager
         from desktop_front.alert_watcher import AlertWatcher
-        from core import auto_mitigator
-
-        notif_mgr = NotificationManager(main_window.tray_icon)
+        # Persistence: Attach notif_mgr to main_window so it isn't garbage collected
+        main_window.notification_manager = NotificationManager(main_window.tray_icon)
+        notif_mgr = main_window.notification_manager
+        
+        # Setup thread-safe signal dispatcher
+        main_window.notif_dispatcher = NotificationDispatcher()
+        main_window.notif_dispatcher.notify_signal.connect(notif_mgr.show_alert)
 
         def notify_from_thread(alert_obj):
-            # 1. Trigger desktop notification
-            QTimer.singleShot(0, lambda: notif_mgr.show_alert(alert_obj))
+            if not main_window:
+                return
+            
+            # Emit signal which Qt will safely deliver to the GUI thread
+            main_window.notif_dispatcher.notify_signal.emit(alert_obj)
             
             # 2. Run auto-mitigation checks
             try:
@@ -193,7 +206,7 @@ def start_notifications(main_window):
         watcher = AlertWatcher(
             notify_func=notify_from_thread,
             poll_interval=3,
-            start_from_latest=False,
+            start_from_latest=True,
         )
         watcher.start()
     except Exception:

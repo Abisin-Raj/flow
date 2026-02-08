@@ -68,3 +68,4 @@ doc1.txt
 secrets/
 verify_env.py
 db_check_result.txt
+ss_output.txt

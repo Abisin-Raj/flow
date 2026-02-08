@@ -205,9 +205,10 @@ class FirewallHelper:
         except subprocess.CalledProcessError as e:
             # If it doesn't exist, nft might error? yes 'No such file or directory' equivalent
             error_msg = f"nftables command failed: {e.stderr.decode()}"
-            # Check if it was just "does not exist"
-            if "does not exist" in error_msg or "multicast" in error_msg: # multicast? sometimes weird errors
-                 return f"ERROR IP {ip} not found"
+            # Check if it was just "does not exist" - this means it's already unblocked
+            if "No such file or directory" in error_msg or "does not exist" in error_msg:
+                 logger.info(f"IP {ip} was not in block set (idempotent success)")
+                 return f"OK Unblocked {ip}"
             logger.error(error_msg)
             return f"ERROR {error_msg}"
             

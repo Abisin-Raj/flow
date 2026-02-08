@@ -152,8 +152,14 @@ class FileScanWidget(QWidget):
                 "Detected at",
             ]
         )
-        self.q_table.setSortingEnabled(False)
-        tune_table(self.q_table)
+        # self.q_table.setSortingEnabled(False)
+        # tune_table(self.q_table) # Removed to force custom resizing
+
+        # Force equal column width for Quarantine Table
+        # q_header = self.q_table.horizontalHeader()
+        # q_header.setStretchLastSection(True)
+        # for i in range(self.q_table.columnCount()):
+        #     q_header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
 
         self.q_col_manager = TableColumnManager(self.q_table, "quarantine_table_state")
         self.q_col_manager.setup()
@@ -185,7 +191,14 @@ class FileScanWidget(QWidget):
             ["Folder path", "Recursive", "Auto quarantine", "Enabled", "Created at"]
         )
         self.w_table.setSortingEnabled(False)
-        tune_table(self.w_table)
+        
+        # Force equal column width for Watched Table
+        # w_header = self.w_table.horizontalHeader()
+        # w_header.setStretchLastSection(True)
+        # for i in range(self.w_table.columnCount()):
+        #     w_header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
+            
+        # tune_table(self.w_table)
 
         self.w_col_manager = TableColumnManager(self.w_table, "watched_table_state")
         self.w_col_manager.setup()

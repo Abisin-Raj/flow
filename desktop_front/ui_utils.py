@@ -39,16 +39,23 @@ class TableColumnManager:
             self.table.horizontalHeader().restoreState(state)
             self.default_set = True
         else:
+            # If no state, we rely on handle_resize to set equal widths later
             self.default_set = False
         
-        # KEY FIX: Override any saved "Stretch" or "Fixed" modes from the past.
-        # Always force Interactive so user can resize.
+        # Connect to sectionResized for immediate persistence
         header = self.table.horizontalHeader()
+        try:
+            header.sectionResized.disconnect(self.save_state)
+        except Exception:
+            pass # Disconnect if already connected to avoid duplicates
+        header.sectionResized.connect(self.save_state)
+        
+        # Override modes to Interactive
         header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         for i in range(self.table.columnCount()):
             header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
 
-    def save_state(self):
+    def save_state(self, *args):
         """Saves current column widths to QSettings."""
         settings = QSettings("Flow", "FlowApp")
         state = self.table.horizontalHeader().saveState()
@@ -61,14 +68,16 @@ class TableColumnManager:
         """
         if not self.default_set:
             width = self.table.viewport().width()
-            count = self.table.columnCount()
-            if width > 0 and count > 0:
-                col_width = width // count
-                # If stretching last section, don't set fixed width for it
-                stretch_last = self.table.horizontalHeader().stretchLastSection()
-                limit = count - 1 if stretch_last else count
-                
-                for i in range(limit):
-                    self.table.setColumnWidth(i, col_width)
-                
-                self.default_set = True
+            # Valid width check to avoid setting small defaults on startup
+            if width > 300: 
+                count = self.table.columnCount()
+                if count > 0:
+                    col_width = width // count
+                    # If stretching last section, don't set fixed width for it
+                    stretch_last = self.table.horizontalHeader().stretchLastSection()
+                    limit = count - 1 if stretch_last else count
+                    
+                    for i in range(limit):
+                        self.table.setColumnWidth(i, col_width)
+                    
+                    self.default_set = True

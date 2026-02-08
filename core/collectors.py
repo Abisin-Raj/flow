@@ -199,8 +199,8 @@ def parse_ss_output():
     """
     import re
     try:
-        # -t: tcp, -n: numeric, -p: processes
-        cmd = ["ss", "-tnp", "state", "established"]
+        # -t: tcp, -n: numeric, -p: processes, -a: all (listening + established)
+        cmd = ["ss", "-tnp", "-a"]
         output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)
     except Exception as e:
         log.warning("parse_ss_output failed: %s", e)
@@ -220,13 +220,16 @@ def parse_ss_output():
             continue
 
         # Check if first column is a state string or a number
-        # Known states: ESTAB, LISTEN, SYN-SENT, etc.
+        # Known states: ESTAB, LISTEN, UNCONN, TIME-WAIT, CLOSE-WAIT, SYN-SENT, SYN-RECV, FIN-WAIT-1, FIN-WAIT-2, CLOSE, CLOSING, LAST-ACK
         # If it's a number, it's Recv-Q, meaning State column is hidden.
         first_col_is_state = False
+        state = "ESTABLISHED" # Default fallback
+
         if parts[0].isdigit():
              first_col_is_state = False
         elif parts[0] in ("ESTAB", "LISTEN", "UNCONN", "TIME-WAIT", "CLOSE-WAIT", "SYN-SENT", "SYN-RECV", "FIN-WAIT-1", "FIN-WAIT-2", "CLOSE", "CLOSING", "LAST-ACK"):
              first_col_is_state = True
+             state = parts[0]
         else:
              # Heuristic: if it looks like an IP, definitely not state
              if "." in parts[0] or ":" in parts[0]:
@@ -234,6 +237,8 @@ def parse_ss_output():
              else:
                   # Assume state if it's a word
                   first_col_is_state = not parts[0].isdigit()
+                  if first_col_is_state:
+                      state = parts[0]
 
         # Indexes based on column presence
         if first_col_is_state:
@@ -267,7 +272,7 @@ def parse_ss_output():
                 "protocol": "tcp",
                 "local_address": local,
                 "remote_address": remote,
-                "state": "ESTABLISHED",
+                "state": state,
                 "pid": pid,
                 "process_name": proc_name,
             })
@@ -401,6 +406,15 @@ def save_connections(data_list):
                 if not process_name:
                     process_name = info.get("name") or ""
 
+        # Geolocation lookup
+        try:
+            from core.geolocation import get_geo
+            src_geo = get_geo(src_ip) or {}
+            dst_geo = get_geo(dst_ip) or {}
+        except ImportError:
+            src_geo = {}
+            dst_geo = {}
+
         conn = Connection.objects.create(
             src_ip=src_ip,
             src_port=src_port,
@@ -411,6 +425,10 @@ def save_connections(data_list):
             pid=pid,
             ppid=ppid,
             process_name=process_name,
+            src_country=src_geo.get("country"),
+            src_city=src_geo.get("city"),
+            dst_country=dst_geo.get("country"),
+            dst_city=dst_geo.get("city"),
         )
 
         # Check for rare outbound ports

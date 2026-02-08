@@ -196,6 +196,26 @@ def create_alert_with_geo(
             except Exception:
                 log.exception("Failed to set geo fields on alert")
 
+    # geo lookup for destination if present
+    if hasattr(alert, "dst_ip") and alert.dst_ip:
+        try:
+            geo_dst = lookup_ip(alert.dst_ip)
+        except Exception:
+            geo_dst = None
+        
+        if geo_dst:
+            try:
+                if hasattr(alert, "dst_country") and "country" in geo_dst:
+                    alert.dst_country = geo_dst.get("country", "")
+                if hasattr(alert, "dst_city") and "city" in geo_dst:
+                    alert.dst_city = geo_dst.get("city", "")
+                if hasattr(alert, "dst_latitude") and "lat" in geo_dst:
+                    alert.dst_latitude = geo_dst.get("lat")
+                if hasattr(alert, "dst_longitude") and "lon" in geo_dst:
+                    alert.dst_longitude = geo_dst.get("lon")
+            except Exception:
+                pass
+
     # Handle proc_name and add debug logging
     proc_name = kwargs.get("proc_name", None)
     try:

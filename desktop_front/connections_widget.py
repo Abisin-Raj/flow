@@ -102,7 +102,8 @@ class ConnectionsWorker(QObject):
 
             # Use values() to get dicts
             data = list(qs.values(
-                "timestamp", "src_ip", "src_port", "dst_ip", "dst_port", "protocol", "status", "pid", "process_name"
+                "timestamp", "src_ip", "src_port", "dst_ip", "dst_port", "protocol", "status", "pid", "process_name",
+                "src_country", "src_city", "dst_country", "dst_city"
             )[: limit])
 
             self.data_ready.emit(data)
@@ -193,8 +194,8 @@ class ConnectionsWidget(QWidget):
         
         # Status filter dropdown
         self.status_filter = QComboBox()
-        self.status_filter.addItems(["ESTABLISHED", "All Statuses", "LISTEN", "TIME_WAIT", "CLOSE_WAIT"])
-        self.status_filter.setCurrentText("ESTABLISHED")
+        self.status_filter.addItems(["All Statuses", "ESTABLISHED", "LISTEN", "TIME_WAIT", "CLOSE_WAIT"])
+        self.status_filter.setCurrentText("All Statuses")
         self.status_filter.setToolTip("Filter by connection status")
         filter_row.addWidget(self.status_filter, 1)
 
@@ -213,7 +214,7 @@ class ConnectionsWidget(QWidget):
         layout.addLayout(filter_row)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(9)
+        self.table.setColumnCount(13)
         self.table.setHorizontalHeaderLabels(
             [
                 "Time",
@@ -223,8 +224,12 @@ class ConnectionsWidget(QWidget):
                 "Dst Port",
                 "Protocol",
                 "Status",
+                "Src Loc",
+                "Dst Loc",
                 "PID",
                 "Process",
+                "Src Country",  # Hidden but available for data
+                "Dst Country",  # Hidden but available for data
             ]
         )
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -256,7 +261,7 @@ class ConnectionsWidget(QWidget):
         header = self.table.horizontalHeader()
         self.table.setSortingEnabled(False)
         header.setStretchLastSection(True)
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        # header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive) # TableColumnManager handles this
         
         self.col_manager = TableColumnManager(self.table, "connections_table_state")
         self.col_manager.setup()
@@ -264,7 +269,9 @@ class ConnectionsWidget(QWidget):
         # Use the delegate for the Status column (index 6)
         self.table.setItemDelegateForColumn(6, StatusDelegate(self.table))
 
-        # tune_table(self.table)  # Removed to allow interactive resizing via TableColumnManager
+        # Hide extra raw country columns if we are combining them or just show them if simple
+        self.table.setColumnHidden(11, True)
+        self.table.setColumnHidden(12, True)
 
         layout.addWidget(self.table)
 
@@ -281,7 +288,7 @@ class ConnectionsWidget(QWidget):
     def _clear_filters(self):
         self.ip_filter_edit.clear()
         self.port_filter_edit.clear()
-        self.status_filter.setCurrentText("ESTABLISHED")
+        self.status_filter.setCurrentText("All Statuses")
         self.refresh_table()
 
     def resizeEvent(self, event):
@@ -305,6 +312,11 @@ class ConnectionsWidget(QWidget):
         self.request_refresh.emit(self.limit, ip_filter, port_filter, status_filter)
 
     def _on_data_loaded(self, rows):
+        # Prevent auto-scroll if user is scrolling, or handle selection preservation
+        current_row = self.table.currentRow()
+        
+        # Optimization: disabling sorting/updates during refill
+        self.table.setUpdatesEnabled(False)
         self.table.setRowCount(len(rows))
 
         for row_idx, conn_dict in enumerate(rows):
@@ -313,6 +325,8 @@ class ConnectionsWidget(QWidget):
             except Exception:
                 import traceback
                 traceback.print_exc()
+        
+        self.table.setUpdatesEnabled(True)
 
         now_txt = datetime.now().strftime("%H:%M:%S")
         self.status_label.setText(f"Last refresh: {now_txt}")
@@ -327,6 +341,15 @@ class ConnectionsWidget(QWidget):
             ts = localtime(ts)
         time_str = ts.strftime("%Y-%m-%d %H:%M:%S") if ts else ""
 
+        # Location formatting
+        def fmt_loc(country, city):
+            if country and city:
+                return f"{country} ({city})"
+            return country or city or "-"
+
+        src_loc = fmt_loc(conn_dict.get("src_country"), conn_dict.get("src_city"))
+        dst_loc = fmt_loc(conn_dict.get("dst_country"), conn_dict.get("dst_city"))
+
         cols = [
             time_str,
             conn_dict.get("src_ip") or "",
@@ -335,36 +358,49 @@ class ConnectionsWidget(QWidget):
             str(conn_dict.get("dst_port") or ""),
             (conn_dict.get("protocol") or "").lower(),
         ]
-
-        for col, value in enumerate(cols):  # Start from column 0
+        
+        # 0-5 filled above
+        for col, value in enumerate(cols):
             item = QTableWidgetItem(value)
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             item.setTextAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
             self.table.setItem(row, col, item)
 
+        # 6: Status
         status_text = conn_dict.get("status") or ""
         status_item = QTableWidgetItem(status_text.upper())
         status_item.setFlags(status_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
         status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        # Set text color (foreground) instead of background
         color = self._status_color(status_text)
         status_item.setForeground(QBrush(color))
-        
-        self.table.setItem(row, 6, status_item)  # Column 6 (Protocol is 5)
+        self.table.setItem(row, 6, status_item) 
 
-        # PID
+        # 7: Src Loc
+        loc_item = QTableWidgetItem(src_loc)
+        loc_item.setFlags(loc_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        self.table.setItem(row, 7, loc_item)
+
+        # 8: Dst Loc
+        loc_item_dst = QTableWidgetItem(dst_loc)
+        loc_item_dst.setFlags(loc_item_dst.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        self.table.setItem(row, 8, loc_item_dst)
+
+        # 9: PID
         pid_val = conn_dict.get("pid")
         pid_text = str(pid_val) if pid_val is not None else ""
         pid_item = QTableWidgetItem(pid_text)
         pid_item.setFlags(pid_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-        self.table.setItem(row, 7, pid_item)  # Column 7
+        self.table.setItem(row, 9, pid_item)
 
-        # Process
+        # 10: Process
         proc_name = conn_dict.get("process_name") or ""
         proc_item = QTableWidgetItem(proc_name)
         proc_item.setFlags(proc_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-        self.table.setItem(row, 8, proc_item)  # Column 8
+        self.table.setItem(row, 10, proc_item)
+        
+        # 11, 12: Hidden country codes specific (optional)
+        self.table.setItem(row, 11, QTableWidgetItem(conn_dict.get("src_country") or ""))
+        self.table.setItem(row, 12, QTableWidgetItem(conn_dict.get("dst_country") or ""))
 
     def _status_color(self, status):
         s = (status or "").upper()

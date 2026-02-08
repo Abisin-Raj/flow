@@ -181,11 +181,13 @@ class AlertsWidget(QWidget):
         )
         self.table.setSortingEnabled(False)
         
-        tune_table(self.table)
+        # tune_table(self.table)
+        
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(True)
+        # header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive) # TableColumnManager handles this
 
         self.table.itemSelectionChanged.connect(self._on_selection_changed)
-
-
         
         self.col_manager = TableColumnManager(self.table, "alerts_table_state")
         self.col_manager.setup()

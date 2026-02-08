@@ -29,10 +29,16 @@ def _open_reader():
     global _reader
     if _reader is None:
         if not os.path.exists(DB_PATH):
-            log.error("Geo DB not found at %s", DB_PATH)
-            raise FileNotFoundError(f"Geo DB not found at {DB_PATH}")
-        _reader = Reader(DB_PATH)
-        log.info("Opened GeoLite2 DB at %s", DB_PATH)
+            log.warning("Geo DB not found at %s. Geolocation disabled.", DB_PATH)
+            return None
+        
+        try:
+            _reader = Reader(DB_PATH)
+            log.info("Opened GeoLite2 DB at %s", DB_PATH)
+        except Exception as e:
+            log.error("Failed to open Geo DB at %s: %s", DB_PATH, e)
+            return None
+
     return _reader
 
 
@@ -67,6 +73,8 @@ def get_geo(ip):
 
     try:
         reader = _open_reader()
+        if reader is None:
+            return None
     except Exception as e:
         log.exception("Failed opening Geo DB: %s", e)
         return None

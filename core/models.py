@@ -16,6 +16,13 @@ class Connection(models.Model):
     dst_port = models.PositiveIntegerField()
     protocol = models.CharField(max_length=10)
     status = models.CharField(max_length=20, blank=True)
+    
+    # Geolocation data
+    src_country = models.CharField(max_length=100, null=True, blank=True)
+    src_city = models.CharField(max_length=100, null=True, blank=True)
+    dst_country = models.CharField(max_length=100, null=True, blank=True)
+    dst_city = models.CharField(max_length=100, null=True, blank=True)
+
     pid = models.IntegerField(null=True, blank=True, db_index=True)
     ppid = models.IntegerField(null=True, blank=True)
     process_name = models.CharField(max_length=200, blank=True)
@@ -41,10 +48,16 @@ class Alert(models.Model):
     src_ip = models.CharField(max_length=100, null=True, blank=True)
     dst_ip = models.CharField(max_length=100, null=True, blank=True)
     dst_port = models.PositiveIntegerField(null=True, blank=True)
+    
     src_country = models.CharField(max_length=100, null=True, blank=True)
     src_city = models.CharField(max_length=100, null=True, blank=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
+    
+    dst_country = models.CharField(max_length=100, null=True, blank=True)
+    dst_city = models.CharField(max_length=100, null=True, blank=True)
+    dst_latitude = models.FloatField(null=True, blank=True)
+    dst_longitude = models.FloatField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     alert_type = models.CharField(max_length=100)
     severity = models.CharField(max_length=20, default="medium")

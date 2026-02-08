@@ -8,13 +8,14 @@ It also integrates process ancestry (process tree) to show the origin of threats
 
 from datetime import timedelta
 
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QTableWidget,
     QTableWidgetItem,
     QHeaderView,
+    QApplication,
 )
 
 from desktop_front.ui_helpers import tune_table
@@ -79,16 +80,15 @@ class ThreatTimelineWidget(QWidget):
             }
         """)
         
-        # Column sizing
         header = self.table.horizontalHeader()
-        header.setStretchLastSection(False)
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)  # Time
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)  # Type
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)  # Severity
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)  # Source
-        header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)  # Destination
-        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)  # Details - takes remaining space
-        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Stretch)  # Process Chain
+        header.setStretchLastSection(True)
+        # Equal width for all columns initially, but allow checking
+        width = self.table.viewport().width()
+        if width > 0:
+            count = self.table.columnCount()
+            col_width = width // count
+            for i in range(count):
+                self.table.setColumnWidth(i, col_width)
         
         self.table.setSortingEnabled(True)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -98,6 +98,11 @@ class ThreatTimelineWidget(QWidget):
         self.table.setAlternatingRowColors(False)
         
         tune_table(self.table)
+        
+        # Add persistence
+        from desktop_front.ui_utils import TableColumnManager
+        self.col_manager = TableColumnManager(self.table, "timeline_table_state")
+        self.col_manager.setup()
 
         layout.addWidget(self.table)
         self.setLayout(layout)
@@ -106,8 +111,22 @@ class ThreatTimelineWidget(QWidget):
         self.timer.setInterval(5000)
         self.timer.timeout.connect(self.refresh)
         self.timer.start()
+        
+        # Connect cleanup
+        app = QApplication.instance()
+        if app:
+            app.aboutToQuit.connect(self.cleanup)
 
         self.refresh()
+
+    def cleanup(self):
+        if hasattr(self, "col_manager"):
+            self.col_manager.save_state()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "col_manager"):
+            self.col_manager.handle_resize()
 
     def refresh(self):
         """Refresh the threat timeline with recent alerts and quarantine events."""
@@ -163,8 +182,10 @@ class ThreatTimelineWidget(QWidget):
                 )
 
             # Add quarantine events
+            # Define window for quarantine lookback (e.g. last 24 hours)
+            window = timezone.now() - timedelta(hours=24)
             try:
-                q_events = (
+                q_events = list(
                     QuarantinedFile.objects.filter(detected_at__gte=window)
                     .order_by("-detected_at")
                     [:50]  # Limit quarantine events
@@ -184,24 +205,19 @@ class ThreatTimelineWidget(QWidget):
                     )
             except Exception as e:
                 # Quarantine events are optional, so just log and continue
-                import logging
-                log = logging.getLogger("desktop_front.threat_timeline")
                 log.debug(f"Could not fetch quarantine events: {e}")
 
             # Sort by time descending
             rows.sort(key=lambda r: r["time"], reverse=True)
 
             # Update table
+            self.table.setRowCount(0) # Clear first
+            
             if not rows:
                 # Show "no data" message
                 self.table.setRowCount(1)
-                self._set_item(0, 0, "")
-                self._set_item(0, 1, "")
-                self._set_item(0, 2, "")
-                self._set_item(0, 3, "")
-                self._set_item(0, 4, "")
-                self._set_item(0, 5, "No security events found. Trigger an alert to see data here.")
-                self._set_item(0, 6, "")
+                self.table.setItem(0, 0, QTableWidgetItem("No security events found."))
+                self.table.setSpan(0, 0, 1, 7) # Span across all columns
             else:
                 self.table.setRowCount(len(rows))
                 for row_idx, row in enumerate(rows):
@@ -216,10 +232,9 @@ class ThreatTimelineWidget(QWidget):
                 
         except Exception as e:
             # Log error but don't crash the widget
-            import logging
-            log = logging.getLogger("desktop_front.threat_timeline")
             log.error(f"Error refreshing threat timeline: {e}")
 
     def _set_item(self, row, col, text):
         item = QTableWidgetItem(str(text))
+        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         self.table.setItem(row, col, item)

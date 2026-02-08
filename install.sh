@@ -145,6 +145,8 @@ sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname = 'flowdb'" |
 
 # Grant privileges (just to be safe)
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE flowdb TO flowuser;"
+# Grant CREATEDB to allow running tests (which create a test database)
+sudo -u postgres psql -c "ALTER USER flowuser CREATEDB;"
 # For Postgres 15+ we might need to grant schema usage
 sudo -u postgres psql -d flowdb -c "GRANT ALL ON SCHEMA public TO flowuser;" || true
 

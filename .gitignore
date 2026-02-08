@@ -66,3 +66,4 @@ doc1.txt
 
 # Secrets
 secrets/
+verify_env.py

@@ -1438,7 +1438,7 @@
             {
                 type: "content",
                 supertitle: "MODULES",
-                title: "1. User (Interactions & Control)",
+                title: "1. User",
                 bullets: [
                     "Monitor Dashboard: Real-time view of throughput and active connections.",
                     "Optimize Thresholds: Fine-tune sensitivity (e.g., connections/sec).",
@@ -1450,7 +1450,7 @@
             {
                 type: "content",
                 supertitle: "MODULES",
-                title: "2. Linux Kernel (Telemetry)",
+                title: "2. Linux Kernel",
                 bullets: [
                     "Collection: Live socket info via /proc/net mapped to /proc/[pid]/exe.",
                     "Interception: Raw Ethernet/IP sniffing using AF_PACKET sockets.",
@@ -1559,7 +1559,7 @@
                     ${backgroundHTML}
                     <div class="z-10 w-full max-w-6xl flex flex-col h-full justify-center">
                         <div class="border-l-4 border-white pl-8 mb-12 slide-header">
-                            ${slideData.supertitle ? `<span class="mono text-xs uppercase tracking-[0.5em] text-gray-500 mb-2 block">${slideData.supertitle}</span>` : ''}
+                            ${slideData.supertitle ? `<span class="mono text-2xl uppercase tracking-[0.4em] text-gray-400 mb-4 block font-light opacity-80">${slideData.supertitle}</span>` : ''}
                             <h2 class="text-6xl font-bold uppercase mb-2 tracking-tight">${slideData.title}</h2>
                             <div class="w-16 h-2 bg-white mt-2"></div>
                         </div>

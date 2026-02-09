@@ -1400,17 +1400,17 @@
             {
                 type: "title",
                 title: "FLOW",
-                subtitle: "OBSERVE // SECURE // FLOW.",
+                subtitle: "OFFLINE-CENTRIC LIGHTWEIGHT EDR FOR LINUX",
                 image: "/gen?prompt=minimalist+black+and+white+manga+city+skyline+silhouette+high+contrast&aspect=16:9"
             },
             {
                 type: "content",
                 title: "What is Flow?",
                 bullets: [
-                    "Real-time Visibility: Graphical dashboard answering 'What is my computer talking to?'",
-                    "Unified Monitoring: Combines network flow telemetry with local process ID (PID) mapping.",
-                    "Proactive Defense: Automated engine detecting reverse shells and port scans.",
-                    "Integrated File Security: Real-time file system watching and automated malware scanning."
+                    "Lightweight EDR: Host-based detection and response designed for Linux.",
+                    "Offline-Centric: Operates with zero external dependencies or cloud reliance.",
+                    "Unified Telemetry: Bridges network flows with local process identifiers (PIDs).",
+                    "Integrated Security: Combines packet inspection with real-time file system auditing."
                 ],
                 image: "/gen?prompt=abstract+digital+data+stream+black+and+white+minimalist+lines+anime+style&aspect=16:9"
             },
@@ -1427,13 +1427,12 @@
             },
             {
                 type: "content",
-                title: "Proposed System (The Solution)",
+                title: "The Solution: A Lightweight EDR",
                 bullets: [
-                    "Unified Dashboard: Professional PyQt6 interface for visibility and alerts.",
-                    "Automated Telemetry: Background threads polling kernel for process-network bridging.",
-                    "Intelligent Alerting: Tiered notification system for malicious patterns.",
-                    "Secure Implementation: Uses Linux Capabilities (cap_net_raw) instead of full root.",
-                    "Data Sovereignty: Local PostgreSQL storage keeps user activity private."
+                    "Self-Contained Architecture: All analysis and storage happens locally on the host.",
+                    "Automated Telemetry: Background engine bridges kernel flows to process owners.",
+                    "Secure Implementation: Uses Linux Capabilities (cap_net_raw) for least-privilege.",
+                    "Data Sovereignty: Local PostgreSQL storage ensures 100% offline privacy."
                 ],
                 image: "/gen?prompt=futuristic+hud+interface+schematic+black+and+white+clean+lines&aspect=16:9"
             },
@@ -1452,12 +1451,12 @@
             {
                 type: "content",
                 supertitle: "MODULES",
-                title: "2. Linux Kernel",
+                title: "2. Linux Kernel Mitigation",
                 bullets: [
-                    "Collection: Live socket info via /proc/net mapped to /proc/[pid]/exe.",
-                    "Interception: Raw Ethernet/IP sniffing using AF_PACKET sockets.",
-                    "Enforcement: Commands nftables to drop traffic or kill connections.",
-                    "Privilege Management: Uses CAP_NET_RAW/ADMIN for least-privilege security."
+                    "Telemetry Collection: Live socket mapping via /proc subsystem.",
+                    "Local Interception: Ethernet/IP sniffing using AF_PACKET sockets.",
+                    "EDR Enforcement: Native nftables commands to drop traffic or sandbox processes.",
+                    "Least Privilege: Zero-root execution using POSIX Capabilities."
                 ],
                 image: "/gen?prompt=complex+circuit+board+and+gears+black+and+white+technical+drawing&aspect=16:9"
             },
@@ -1505,12 +1504,12 @@
             },
             {
                 type: "diagram",
-                title: "Database Table Design (Schema) - I",
+                title: "Table Design: Local Telemetry Store I",
                 image: "assets/table design/table design.png"
             },
             {
                 type: "diagram",
-                title: "Database Table Design (Schema) - II",
+                title: "Table Design: Local Telemetry Store II",
                 image: "assets/table design/table design(1).png"
             },
             {

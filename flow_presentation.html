@@ -1527,7 +1527,8 @@
 
         // Helper to generate inner HTML string for a slide
         function getSlideHTML(slideData) {
-            const backgroundHTML = slideData.image ? `
+            const isPlaceholder = slideData.image && slideData.image.startsWith('/gen?prompt=');
+            const backgroundHTML = (slideData.image && !isPlaceholder) ? `
                 <div class="absolute inset-0 z-0 opacity-20">
                     <img src="${slideData.image}" class="w-full h-full object-cover grayscale brightness-50" alt="Background">
                 </div>

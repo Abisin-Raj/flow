@@ -1477,7 +1477,7 @@
                 title: "Software Stack & Dependencies",
                 bullets: [
                     "Runtime: Python 3.10+.",
-                    "Database: PostgreSQL (Production engine).",
+                    "Database: PostgreSQL.",
                     "Frontend: PyQt6 (Hardware-accelerated UI).",
                     "Core Libs: Scapy (Sniffing), GeoIP2 (Location), TLSH (Hashing), Psutil (PID Map).",
                     "Utilities: libcap (Capabilities), nftables (Firewall)."
@@ -1486,15 +1486,18 @@
             },
             {
                 type: "diagram",
-                title: "Data Flow Diagram (DFD) Level 0"
+                title: "Data Flow Diagram (DFD) Level 0",
+                image: "assets/dfd/dfd level 0.png"
             },
             {
                 type: "diagram",
-                title: "Data Flow Diagram (DFD) Level 1"
+                title: "Data Flow Diagram (DFD) Level 1",
+                image: "assets/dfd/dfd level 1 user.png"
             },
             {
                 type: "diagram",
-                title: "Data Flow Diagram (DFD) Level 1.1"
+                title: "Data Flow Diagram (DFD) Level 1.1",
+                image: "assets/dfd/dfd level 1.1 syatem.png"
             },
             {
                 type: "diagram",
@@ -1581,8 +1584,17 @@
                     </div>
                 `;
             } else if (slideData.type === 'diagram') {
+                const diagramContent = slideData.image ? `
+                    <img src="${slideData.image}" class="max-w-full max-h-full object-contain relative z-20" style="filter: invert(1) brightness(1.2); opacity: 0.9;">
+                ` : `
+                    <div class="text-gray-500 mono text-sm relative z-20 flex flex-col items-center">
+                        <span class="material-symbols-outlined text-6xl mb-4">architecture</span>
+                        <span class="uppercase tracking-widest border border-gray-600 px-4 py-2 bg-black">Visual Structure Placeholder</span>
+                    </div>
+                `;
+
                 return `
-                    < div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" ></div >
+                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
                         <div class="z-10 w-full max-w-7xl h-full flex flex-col pt-12">
                             <div class="flex justify-between items-end border-b border-white pb-4 mb-8 slide-header">
                                 <h2 class="text-5xl font-bold uppercase tracking-tight">${slideData.title}</h2>
@@ -1596,10 +1608,7 @@
                                 <div class="absolute w-full h-px bg-white opacity-20"></div>
                                 <div class="absolute h-full w-px bg-white opacity-20"></div>
 
-                                <div class="text-gray-500 mono text-sm relative z-20 flex flex-col items-center">
-                                    <span class="material-symbols-outlined text-6xl mb-4">architecture</span>
-                                    <span class="uppercase tracking-widest border border-gray-600 px-4 py-2 bg-black">Visual Structure Placeholder</span>
-                                </div>
+                                ${diagramContent}
 
                                 <!-- Decorative Corners -->
                                 <div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white"></div>

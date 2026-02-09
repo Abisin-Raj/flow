@@ -41,7 +41,7 @@
                 function c(d) { this.g = (b += Math.random() + 1).toString(); if (d) { d = r(d); for (var e; !(e = d.next()).done;)e = e.value, this.set(e[0], e[1]) } } function g() { } function h(d) { var e = typeof d; return e === "object" && d !== null || e === "function" } function l(d) { if (!M(d, f)) { var e = new g; t(d, f, { value: e }) } } function n(d) { var e = Object[d]; e && (Object[d] = function (k) { if (k instanceof g) return k; Object.isExtensible(k) && l(k); return e(k) }) } if (function () {
                     if (!a || !Object.seal) return !1; try {
                         var d = Object.seal({}), e = Object.seal({}),
-                        k = new a([[d, 2], [e, 3]]); if (k.get(d) != 2 || k.get(e) != 3) return !1; k.delete(d); k.set(e, 4); return !k.has(d) && k.get(e) == 4
+                            k = new a([[d, 2], [e, 3]]); if (k.get(d) != 2 || k.get(e) != 3) return !1; k.delete(d); k.set(e, 4); return !k.has(d) && k.get(e) == 4
                     } catch (q) { return !1 }
                 }()) return a; var f = "$jscomp_hidden_" + Math.random(); n("freeze"); n("preventExtensions"); n("seal"); var b = 0; c.prototype.set = function (d, e) { if (!h(d)) throw Error("Invalid WeakMap key"); l(d); if (!M(d, f)) throw Error("WeakMap key fail: " + d); d[f][this.g] = e; return this }; c.prototype.get = function (d) { return h(d) && M(d, f) ? d[f][this.g] : void 0 }; c.prototype.has = function (d) {
                     return h(d) && M(d,
@@ -162,7 +162,7 @@
                 function b(k) { this.A = (g += Math.random() + 1).toString(); if (k) { k = u(k); for (var m; !(m = k.next()).done;)m = m.value, this.set(m[0], m[1]) } } function c() { } function d(k) { var m = typeof k; return m === "object" && k !== null || m === "function" } function e(k) { if (!Ea(k, f)) { var m = new c; ca(k, f, { value: m }) } } function h(k) { var m = Object[k]; m && (Object[k] = function (r) { if (r instanceof c) return r; Object.isExtensible(r) && e(r); return m(r) }) } if (function () {
                     if (!a || !Object.seal) return !1; try {
                         var k = Object.seal({}), m = Object.seal({}),
-                        r = new a([[k, 2], [m, 3]]); if (r.get(k) != 2 || r.get(m) != 3) return !1; r.delete(k); r.set(m, 4); return !r.has(k) && r.get(m) == 4
+                            r = new a([[k, 2], [m, 3]]); if (r.get(k) != 2 || r.get(m) != 3) return !1; r.delete(k); r.set(m, 4); return !r.has(k) && r.get(m) == 4
                     } catch (C) { return !1 }
                 }()) return a; var f = "$jscomp_hidden_" + Math.random(); h("freeze"); h("preventExtensions"); h("seal"); var g = 0; b.prototype.set = function (k, m) { if (!d(k)) throw Error("Invalid WeakMap key"); e(k); if (!Ea(k, f)) throw Error("WeakMap key fail: " + k); k[f][this.A] = m; return this }; b.prototype.get = function (k) { return d(k) && Ea(k, f) ? k[f][this.A] : void 0 }; b.prototype.has = function (k) {
                     return d(k) && Ea(k,
@@ -304,7 +304,7 @@
                             var g = f, k = !1; var m = g; var r = g.charAt(0); r != r.toLowerCase() && (k = !0, m = g.charAt(0).toLowerCase() + g.substring(1)); var C = ge; for (r = 1; r <= m.length; ++r) { var A = C, E = m.substring(0, r); if (E.length == 0 ? A.ta() : !Nd(A, E)) break } m = r == 1 ? null : (m = C.get(m.substring(0, r - 1))) ? { Da: g.substring(0, r - 1), value: g.substring(r - 1), Ja: k, attributes: m } : null; if (m) {
                                 g = []; k = []; r = !1; for (C = 0; C < m.attributes.types.length; C++) {
                                     A =
-                                    m.attributes.types[C]; var I = m.value; E = h; if (m.Ja && A == 1) for (var P = I.length; P < 12 && E < b.length - 1;)I += "-" + b[E + 1], P = I.length, ++E; else if (A == 2) for (; E < b.length - 1 && b[E + 1].match(/^[\d\.]/);)I += "-" + b[E + 1], ++E; P = m.attributes.A[C]; I = ke(a, A)(m.Da, I, c, d, P); if (I === null) { r = !0; h = E; break } else g.push(A), k.push(I)
+                                        m.attributes.types[C]; var I = m.value; E = h; if (m.Ja && A == 1) for (var P = I.length; P < 12 && E < b.length - 1;)I += "-" + b[E + 1], P = I.length, ++E; else if (A == 2) for (; E < b.length - 1 && b[E + 1].match(/^[\d\.]/);)I += "-" + b[E + 1], ++E; P = m.attributes.A[C]; I = ke(a, A)(m.Da, I, c, d, P); if (I === null) { r = !0; h = E; break } else g.push(A), k.push(I)
                                 } if (!r) for (m = 0; m < k.length; m++)C = g[m], I = k[m], le(a, C)(f, I); e = e && r
                             } else e = !1
                         }
@@ -421,12 +421,12 @@
                     })
                 } function jc(l) { var p; return w(function (t) { var B = l.getAttribute("src"); p = B ? Ad(B) : null; if (!p) return t.return(); p = A(p); p.startsWith("/gen?prompt=") ? (wb++, I(l, p)) : p.startsWith("/image?query=") && (wb++, P(l, p)); t.H() }) } function nf(l,
                     p) {
-                        var t, B, J, N, S, H, X; return w(function (O) {
-                            switch (O.A) {
-                                case 1: t = null; O.T(2); vd(l, xd); if (!p.startsWith("/gen?prompt=")) { B = d(p); J = k(B, IMG_SEARCH_REPLACE_MAP, vb); if (!J) return console.debug("no image search found for key: ", B), wd(l), O.return(); N = u(J); t = H = S = N.next().value; O.K(4); break } return O.B(E(p), 5); case 5: t = O.D; case 4: if (!t) return console.debug("No image found for: ", p), wd(l), O.return(); if (t === p) return console.debug("Unexpected: resolvedUrl is the same as placeholderUrl: ", t, p), wd(l), O.return(); vd(l,
-                                    t); O.S(0); break; case 2: X = O.P(), console.debug("Error setting backgroundImage", X), O.H()
-                            }
-                        })
+                    var t, B, J, N, S, H, X; return w(function (O) {
+                        switch (O.A) {
+                            case 1: t = null; O.T(2); vd(l, xd); if (!p.startsWith("/gen?prompt=")) { B = d(p); J = k(B, IMG_SEARCH_REPLACE_MAP, vb); if (!J) return console.debug("no image search found for key: ", B), wd(l), O.return(); N = u(J); t = H = S = N.next().value; O.K(4); break } return O.B(E(p), 5); case 5: t = O.D; case 4: if (!t) return console.debug("No image found for: ", p), wd(l), O.return(); if (t === p) return console.debug("Unexpected: resolvedUrl is the same as placeholderUrl: ", t, p), wd(l), O.return(); vd(l,
+                                t); O.S(0); break; case 2: X = O.P(), console.debug("Error setting backgroundImage", X), O.H()
+                        }
+                    })
                 } function ce(l) { var p, t; return w(function (B) { if (!(l instanceof HTMLElement)) return B.return(); p = l; (t = Bd(p, !1)) || (t = Bd(p, !0)); if (!t || !t.startsWith("/gen?prompt=") && !t.startsWith("/image?query=")) return B.return(); wb++; t = A(t); nf(p, t); B.H() }) } function de() {
                     return w(function (l) {
                         console.debug("processLoadedDoc " + Date.now()); Vd = Date.now(); b(); document.querySelectorAll("img").forEach(function (p) {
@@ -1387,7 +1387,7 @@
                 </p>
             </div>
             <div class="absolute bottom-10 left-10 z-10 mono text-xs text-gray-500">
-                PROJECT_FLOW // SYS.INIT // 2024
+                FLOW / ABISIN RAJ / <span class="material-symbols-outlined text-[10px] align-middle">policy</span> 2026
             </div>
         </div>
     </main>
@@ -1541,7 +1541,7 @@
                         </p>
                     </div>
                     <div class="absolute bottom-10 left-10 z-10 mono text-xs text-gray-500">
-                        PROJECT_FLOW // SYS.INIT // 2024
+                        FLOW / ABISIN RAJ / <span class="material-symbols-outlined text-[10px] align-middle">policy</span> 2026
                     </div>
                 `;
             } else if (slideData.type === 'content') {

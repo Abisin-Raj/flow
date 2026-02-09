@@ -170,7 +170,7 @@ class AlertsWidget(QWidget):
 
 
         self.table = QTableWidget()
-        self.table.setColumnCount(9)
+        self.table.setColumnCount(11)
         self.table.setHorizontalHeaderLabels(
             [
                 "Time",
@@ -181,6 +181,8 @@ class AlertsWidget(QWidget):
                 "Port",
                 "PID",
                 "Process",
+                "Lat",
+                "Lon",
                 "Message",
             ]
         )
@@ -323,7 +325,12 @@ class AlertsWidget(QWidget):
             proc_name = getattr(a, "process_name", None) or getattr(a, "proc_name", None) or ""
             self.table.setItem(row, 7, QTableWidgetItem(proc_name))
 
-            self.table.setItem(row, 8, QTableWidgetItem(a.message or ""))
+            lat_text = f"{a.latitude:.4f}" if a.latitude is not None else ""
+            lon_text = f"{a.longitude:.4f}" if a.longitude is not None else ""
+            self.table.setItem(row, 8, QTableWidgetItem(lat_text))
+            self.table.setItem(row, 9, QTableWidgetItem(lon_text))
+
+            self.table.setItem(row, 10, QTableWidgetItem(a.message or ""))
 
             self._color_row_by_severity(row, a)
 
@@ -534,6 +541,8 @@ class AlertsWidget(QWidget):
         
         if alert.src_ip:
             lines.append(f"Source IP: {alert.src_ip}")
+            if alert.latitude is not None and alert.longitude is not None:
+                lines.append(f"Location: {alert.latitude:.4f}, {alert.longitude:.4f}")
         if alert.dst_ip:
             lines.append(f"Destination IP: {alert.dst_ip}")
         if alert.dst_port:

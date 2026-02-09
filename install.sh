@@ -27,7 +27,8 @@ fi
 
 if [[ "$OS" == "fedora" || "$OS" == "rhel" || "$OS" == "centos" ]]; then
     echo "Detected Fedora/RHEL (dnf)"
-    dnf install -y nftables python3-pip libcap polkit rsync gcc gcc-c++ python3-devel cmake libpq-devel net-tools postgresql-server postgresql-contrib
+    # Fedora 43+ moved nftables service to a separate package
+    dnf install -y nftables nftables-services python3-pip libcap polkit rsync gcc gcc-c++ python3-devel cmake libpq-devel net-tools postgresql-server postgresql-contrib
 elif [[ "$OS" == "debian" || "$OS" == "ubuntu" || "$OS" == "linuxmint" || "$OS" == "pop" ]]; then
     echo "Detected Debian/Ubuntu (apt)"
     apt-get update
@@ -37,7 +38,7 @@ elif [[ "$OS" == "arch" || "$OS" == "manjaro" ]]; then
     pacman -Sy --noconfirm nftables python-pip libcap polkit rsync base-devel cmake postgresql-libs net-tools postgresql
 elif command -v dnf >/dev/null; then
     echo "Fallback: Detected dnf"
-    dnf install -y nftables python3-pip libcap polkit rsync gcc gcc-c++ python3-devel cmake libpq-devel net-tools postgresql-server postgresql-contrib
+    dnf install -y nftables nftables-services python3-pip libcap polkit rsync gcc gcc-c++ python3-devel cmake libpq-devel net-tools postgresql-server postgresql-contrib
 elif command -v apt-get >/dev/null; then
     echo "Fallback: Detected apt-get"
     apt-get update
@@ -76,7 +77,6 @@ echo "Installing Python dependencies into venv"
 "$INSTALL_DIR/venv/bin/pip" install --upgrade pip
 "$INSTALL_DIR/venv/bin/pip" install -r requirements.txt
 
-# 7. Initialize Database
 # 7. Initialize Database
 echo "Configuring PostgreSQL..."
 
@@ -180,6 +180,12 @@ if ! getent group flow > /dev/null 2>&1; then
     echo "Created 'flow' group"
 else
     echo "'flow' group already exists"
+fi
+
+# 10b. Add invoking user to flow group
+if [ -n "$SUDO_USER" ]; then
+    echo "Adding $SUDO_USER to 'flow' group..."
+    usermod -aG flow "$SUDO_USER"
 fi
 
 # 11. Install firewall helper

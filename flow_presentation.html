@@ -1369,11 +1369,11 @@
     <main class="w-full h-full relative overflow-hidden" id="app-root">
         <div class="w-full h-full flex flex-col items-center justify-center p-12 active-slide absolute inset-0 bg-black"
             style="clip-path: polygon(0px 0px, 100% 0px, 100% 100%, 0px 100%);">
-            <div class="absolute inset-0 z-0 opacity-40">
-                <img src="data:image/svg+xml;base64,IDxzdmcgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgc3R5bGU9IndpZHRoOjEwMCU7IGhlaWdodDoxMDAlOyI+IDwhLS0gV3JhcHBlciBncm91cCBmb3Igb3BhY2l0eSAtLT4gPGcgb3BhY2l0eT0iMC40Ij4gPGcgaWQ9Imljb24iIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2FhYWFhYSIgc3Ryb2tlLXdpZHRoPSI1LjI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiPiA8Y2lyY2xlIGN4PSI1MCIgY3k9IjQ1IiByPSIxOSI+PC9jaXJjbGU+IDxsaW5lIHgxPSIzNyIgeTE9IjMyIiB4Mj0iNjMiIHkyPSI1OCI+PC9saW5lPiA8L2c+IDxnIGlkPSJ0ZXh0Ij4gPHRleHQgeD0iNTAiIHk9IjgwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZmlsbD0iI2FhYWFhYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC13ZWlnaHQ9IjYwMCIgZm9udC1zdHlsZT0iaXRhbGljIj5ObyBpbWFnZTwvdGV4dD4gPC9nPiA8L2c+IDwvc3ZnPg=="
-                    class="w-full h-full object-cover grayscale brightness-50" alt="Background"
-                    style="object-fit: fill;">
-                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black"></div>
+            <div class="absolute inset-0 z-0 opacity-40"
+                style="background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%);">
+                <div class="absolute inset-0"
+                    style="background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px); background-size: 100px 100px; opacity: 0.2;">
+                </div>
             </div>
             <div class="z-10 text-center mix-blend-screen relative">
                 <div class="overflow-hidden mb-4">
@@ -1437,6 +1437,7 @@
             },
             {
                 type: "content",
+                supertitle: "MODULES",
                 title: "1. User (Interactions & Control)",
                 bullets: [
                     "Monitor Dashboard: Real-time view of throughput and active connections.",
@@ -1448,6 +1449,7 @@
             },
             {
                 type: "content",
+                supertitle: "MODULES",
                 title: "2. Linux Kernel (Telemetry)",
                 bullets: [
                     "Collection: Live socket info via /proc/net mapped to /proc/[pid]/exe.",
@@ -1525,12 +1527,19 @@
 
         // Helper to generate inner HTML string for a slide
         function getSlideHTML(slideData) {
+            const backgroundHTML = slideData.image ? `
+                <div class="absolute inset-0 z-0 opacity-20">
+                    <img src="${slideData.image}" class="w-full h-full object-cover grayscale brightness-50" alt="Background">
+                </div>
+            ` : `
+                <div class="absolute inset-0 z-0 opacity-10" style="background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000000 100%);">
+                    <div class="absolute inset-0" style="background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px); background-size: 100px 100px; opacity: 0.2;"></div>
+                </div>
+            `;
+
             if (slideData.type === 'title') {
                 return `
-                    <div class="absolute inset-0 z-0 opacity-40">
-                        <img src="${slideData.image}" class="w-full h-full object-cover grayscale brightness-50" alt="Background">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black"></div>
-                    </div>
+                    ${backgroundHTML.replace('opacity-20', 'opacity-40')}
                     <div class="z-10 text-center mix-blend-screen relative">
                         <div class="overflow-hidden mb-4">
                             <h1 class="slide-title text-9xl font-black uppercase tracking-tighter" style="line-height: 0.8;">${slideData.title}</h1>
@@ -1546,11 +1555,10 @@
                 `;
             } else if (slideData.type === 'content') {
                 return `
-                     <div class="absolute inset-0 z-0 opacity-20">
-                        <img src="${slideData.image}" class="w-full h-full object-cover grayscale brightness-50" alt="Background">
-                    </div>
+                    ${backgroundHTML}
                     <div class="z-10 w-full max-w-6xl flex flex-col h-full justify-center">
                         <div class="border-l-4 border-white pl-8 mb-12 slide-header">
+                            ${slideData.supertitle ? `<span class="mono text-xs uppercase tracking-[0.5em] text-gray-500 mb-2 block">${slideData.supertitle}</span>` : ''}
                             <h2 class="text-6xl font-bold uppercase mb-2 tracking-tight">${slideData.title}</h2>
                             <div class="w-16 h-2 bg-white mt-2"></div>
                         </div>
@@ -1558,45 +1566,45 @@
                             ${slideData.bullets.map(b => {
                     const [bold, rest] = b.split(':');
                     return `
-                                <li class="bullet-point flex items-start space-x-4">
-                                    <span class="material-symbols-outlined text-white mt-1 text-sm">change_history</span>
-                                    <div class="text-2xl font-light">
-                                        <span class="font-bold border-b border-gray-600 pb-1 mr-2">${bold}:</span>
-                                        <span class="text-gray-300">${rest || ''}</span>
-                                    </div>
-                                </li>`;
+                                    <li class="bullet-point flex items-start space-x-4">
+                                        <span class="material-symbols-outlined text-white mt-1 text-sm">change_history</span>
+                                        <div class="text-2xl font-light">
+                                            <span class="font-bold border-b border-gray-600 pb-1 mr-2">${bold}:</span>
+                                            <span class="text-gray-300">${rest || ''}</span>
+                                        </div>
+                                    </li>`;
                 }).join('')}
                         </ul>
                     </div>
                 `;
             } else if (slideData.type === 'diagram') {
                 return `
-                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
-                    <div class="z-10 w-full max-w-7xl h-full flex flex-col pt-12">
-                        <div class="flex justify-between items-end border-b border-white pb-4 mb-8 slide-header">
-                            <h2 class="text-5xl font-bold uppercase tracking-tight">${slideData.title}</h2>
-                            <span class="mono text-sm">[ DIAGRAM_MODE ]</span>
-                        </div>
-                        <div class="diagram-box flex-grow w-full relative flex items-center justify-center p-8 bg-black bg-opacity-50 diagram-area">
-                            <!-- Architectural grid lines -->
-                            <div class="absolute inset-0" style="background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px); background-size: 50px 50px; opacity: 0.3;"></div>
-                            
-                            <!-- Center Crosshair -->
-                            <div class="absolute w-full h-px bg-white opacity-20"></div>
-                            <div class="absolute h-full w-px bg-white opacity-20"></div>
-
-                            <div class="text-gray-500 mono text-sm relative z-20 flex flex-col items-center">
-                                <span class="material-symbols-outlined text-6xl mb-4">architecture</span>
-                                <span class="uppercase tracking-widest border border-gray-600 px-4 py-2 bg-black">Visual Structure Placeholder</span>
+                    < div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" ></div >
+                        <div class="z-10 w-full max-w-7xl h-full flex flex-col pt-12">
+                            <div class="flex justify-between items-end border-b border-white pb-4 mb-8 slide-header">
+                                <h2 class="text-5xl font-bold uppercase tracking-tight">${slideData.title}</h2>
+                                <span class="mono text-sm">[ DIAGRAM_MODE ]</span>
                             </div>
+                            <div class="diagram-box flex-grow w-full relative flex items-center justify-center p-8 bg-black bg-opacity-50 diagram-area">
+                            <!-- Architectural grid lines -->
+                                <div class="absolute inset-0" style="background-image: linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px); background-size: 50px 50px; opacity: 0.3;"></div>
 
-                            <!-- Decorative Corners -->
-                            <div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white"></div>
-                            <div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white"></div>
-                            <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white"></div>
-                            <div class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white"></div>
+                                <!-- Center Crosshair -->
+                                <div class="absolute w-full h-px bg-white opacity-20"></div>
+                                <div class="absolute h-full w-px bg-white opacity-20"></div>
+
+                                <div class="text-gray-500 mono text-sm relative z-20 flex flex-col items-center">
+                                    <span class="material-symbols-outlined text-6xl mb-4">architecture</span>
+                                    <span class="uppercase tracking-widest border border-gray-600 px-4 py-2 bg-black">Visual Structure Placeholder</span>
+                                </div>
+
+                                <!-- Decorative Corners -->
+                                <div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white"></div>
+                                <div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white"></div>
+                                <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white"></div>
+                                <div class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white"></div>
+                            </div>
                         </div>
-                    </div>
                 `;
             }
         }

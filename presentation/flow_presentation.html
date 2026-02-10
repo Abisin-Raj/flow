@@ -1522,6 +1522,12 @@
                     "Final Check: Capability verification and leakage tests."
                 ],
                 image: "/gen?prompt=manga+style+checklist+and+magnifying+glass+black+and+white&aspect=16:9"
+            },
+            {
+                type: "title",
+                title: "Questions?",
+                subtitle: "Thank you for your attention.",
+                image: "/gen?prompt=minimalist+abstract+question+mark+pattern+black+and+white+high+contrast&aspect=16:9"
             }
         ];
 
@@ -1623,9 +1629,32 @@
 
         function init() {
             renderSlide(currentSlide);
+            // Listen for KDE Connect / Presentation Remote keys
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') nextSlide();
-                if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevSlide();
+                // Next Slide: Right Arrow (39), Down Arrow, or Spacebar (32)
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.keyCode === 39 || e.keyCode === 32) {
+                    console.log('Next slide triggered (Keyboard)');
+                    if (e.key === ' ') e.preventDefault(); // Prevent page scroll
+                    nextSlide();
+                }
+                // Previous Slide: Left Arrow (37) or Up Arrow
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.keyCode === 37) {
+                    console.log('Previous slide triggered (Keyboard)');
+                    prevSlide();
+                }
+            });
+
+            // Mouse Click Navigation
+            // Disable context menu to allow Right Click navigation
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('mousedown', (e) => {
+                if (e.button === 2) { // Right Click
+                    console.log('Next slide triggered (Mouse Right Click)');
+                    nextSlide();
+                } else if (e.button === 0) { // Left Click
+                    console.log('Previous slide triggered (Mouse Left Click)');
+                    prevSlide();
+                }
             });
         }
 

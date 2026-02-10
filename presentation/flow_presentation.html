@@ -1500,7 +1500,8 @@
             },
             {
                 type: "diagram",
-                title: "Network & System Architecture Diagram"
+                title: "Network & System Architecture Diagram",
+                image: "assets/network diagram/nwdia.png"
             },
             {
                 type: "diagram",
@@ -1654,8 +1655,23 @@
                 } else if (e.button === 0) { // Left Click
                     console.log('Previous slide triggered (Mouse Left Click)');
                     prevSlide();
+                } else if (e.button === 1) { // Middle Click
+                    console.log('Fullscreen toggle triggered (Mouse Middle Click)');
+                    toggleFullscreen();
                 }
             });
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
         }
 
         function updateProgress() {

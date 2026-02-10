@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLOW - Exhaustive EDR Technical Script</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono&family=Crimson+Pro:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #000;
+            --secondary: #333;
+            --accent: #555;
+            --bg: #fff;
+            --text: #1a1a1a;
+        }
+
+        @media print {
+            .no-print {
+                display: none;
+            }
+
+            body {
+                padding: 0;
+            }
+
+            .slide-page {
+                page-break-after: always;
+                border: none !important;
+            }
+        }
+
+        body {
+            font-family: 'Crimson Pro', serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: 'Inter', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            margin-top: 2em;
+        }
+
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 4px solid var(--primary);
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 1.4em;
+            color: var(--secondary);
+            border-left: 4px solid var(--primary);
+            padding-left: 15px;
+            margin-top: 3em;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            color: #444;
+        }
+
+        .slide-page {
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .script-box {
+            background: #f9f9f9;
+            padding: 25px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 1.1em;
+            line-height: 1.5;
+            border: 1px solid #eee;
+        }
+
+        .script-box::before {
+            content: "TECHNICAL SCRIPT:";
+            font-family: 'Inter', sans-serif;
+            font-weight: bold;
+            display: block;
+            font-size: 0.75em;
+            color: #888;
+            margin-bottom: 15px;
+            letter-spacing: 0.1em;
+        }
+
+        .tech-tag {
+            display: inline-block;
+            background: #eee;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8em;
+            margin: 2px;
+            border: 1px solid #ddd;
+        }
+
+        .tool-list {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff8f0;
+            border: 1px dashed #e67e22;
+        }
+
+        .tool-list strong {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            color: #e67e22;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8em;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f5f5f5;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.75em;
+        }
+
+        .schema-header {
+            background: var(--primary);
+            color: white;
+            padding: 8px 12px;
+            display: inline-block;
+            margin-top: 25px;
+            font-weight: bold;
+        }
+
+        .stack-note {
+            font-size: 0.82em;
+            color: #555;
+            margin-top: 10px;
+            padding: 10px;
+            border-left: 2px solid #e67e22;
+            background: #fff9f4;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>FLOW: Exhaustive Technical EDR Script</h1>
+        <p class="mono" style="margin-top:10px;">EDR ARCHITECTURE // COMPREHENSIVE SCHEMA-TO-CODE MAPPING // STACK
+            JUSTIFICATION</p>
+        <p style="margin-top:5px;">Lead Architect: Abisin Raj | Technical Documentation v6.0 (Final Revision)</p>
+    </header>
+
+    <!-- Slide 1 -->
+    <section class="slide-page">
+        <h2>Slide 01: FLOW</h2>
+        <div class="script-box">
+            "<strong>FLOW</strong> is an offline-centric security guard for Linux. It connects network traffic directly
+            to specific applications in real-time. Everything stays on the machine; no cloud needed."
+        </div>
+    </section>
+
+    <!-- Slide 02 -->
+    <section class="slide-page">
+        <h2>Slide 02: What is Flow?</h2>
+        <div class="script-box">
+            "Uses <strong>Unified Telemetry</strong> to map every data packet to the app that sent it. Built for
+            <strong>Data Sovereignty</strong>—all processing happens locally. It creates a detailed audit trail by
+            merging socket data with the system's <code>/proc</code> subsystem."
+        </div>
+    </section>
+
+    <!-- Slide 03 -->
+    <section class="slide-page">
+        <h2>Slide 03: Existing System (The Problem)</h2>
+        <div class="script-box">
+            "Current Linux monitoring is fragmented and manual. Tools like <code>netstat</code> and <code>tcpdump</code>
+            don't talk to each other. Enterprise SIEMs are too resource-heavy for workstations. There is a
+            <strong>Correlation Gap</strong>: seeing the traffic doesn't automatically reveal which app caused
+            it.<br><br>
+            <strong>Existing System Pros:</strong> No setup required; uses built-in tools.<br>
+            <strong>Existing System Cons:</strong> No automated correlation; high manual effort; resource-heavy under
+            load."
+        </div>
+    </section>
+
+    <!-- Slide 04 -->
+    <section class="slide-page">
+        <h2>Slide 04: The Solution: A Lightweight EDR</h2>
+        <div class="script-box">
+            "Uses <strong>Python</strong> for logic and <strong>PostgreSQL</strong> for local data storage. Employs
+            <strong>POSIX Capabilities</strong> to sniff traffic and manage firewalls without needing full root
+            access.<br><br>
+            <strong>Proposed System (Flow) Pros:</strong> Automatic app-to-traffic correlation; offline privacy; minimal
+            CPU/RAM usage.<br>
+            <strong>Proposed System (Flow) Cons:</strong> Requires initial installation; Linux-specific."
+        </div>
+        <div class="stack-note">
+            <strong>Stack Justification:</strong> PostgreSQL ensures security logs are persistent, searchable, and safe
+            from power loss.
+        </div>
+    </section>
+
+    <!-- Slide 05 -->
+    <section class="slide-page">
+        <h2>Slide 05: 1. User (Module)</h2>
+        <div class="script-box">
+            "Hardware-accelerated dashboard showing real-time throughput and connections. Allows users to set
+            <strong>Smart Thresholds</strong> for traffic volume and resolve threats by whitelisting or blocking apps
+            with one click."
+        </div>
+    </section>
+
+    <!-- Slide 06 -->
+    <section class="slide-page">
+        <h2>Slide 06: 2. Linux Kernel Mitigation</h2>
+        <div class="script-box">
+            "Automatically links network traffic to app IDs using system files. Uses <strong>nftables</strong> to
+            instantly block suspicious IPs or sandboxes problematic apps before they can cause damage."
+        </div>
+        <div class="tool-list">
+            <strong>Core System Tools:</strong>
+            <span class="tech-tag">nftables</span> <span class="tech-tag">psutil</span> <span
+                class="tech-tag">Scapy</span> <span class="tech-tag">libcap</span>
+        </div>
+    </section>
+
+    <!-- Slide 07 -->
+    <section class="slide-page">
+        <h2>Slide 07: Hardware & OS Requirements</h2>
+        <div class="script-box">
+            "Runs on any modern Linux system with <code>/proc</code> support. Very low resource usage: 1GHz CPU and
+            256MB RAM minimum. Works on edge devices and old hardware without lagging the system."
+        </div>
+    </section>
+
+    <!-- Slide 08 -->
+    <section class="slide-page">
+        <h2>Slide 08: Software Stack & Dependencies</h2>
+        <div class="script-box">
+            "<strong>Scapy</strong> for packet reading, <strong>TLSH</strong> for fuzzy-matching malware signatures, and
+            <strong>psutil</strong> for process mapping. <strong>libcap</strong> ensures minimum necessary permissions
+            for security tasks."
+        </div>
+    </section>
+
+    <!-- Slide 09 -->
+    <section class="slide-page">
+        <h2>Slide 09: Data Flow Diagram (DFD) Level 0</h2>
+        <div class="script-box">
+            "High-level flow: Raw network data and system states are ingested, processed through detection rules, and
+            stored in the local vault. All data stays air-gapped on the machine."
+        </div>
+    </section>
+
+    <!-- Slide 10 -->
+    <section class="slide-page">
+        <h2>Slide 10: Data Flow Diagram (DFD) Level 1 (User Interaction)</h2>
+        <div class="script-box">
+            "Shows the connection between the UI and the data store. Actions like 'Block IP' update the database, which
+            then triggers the firewall to cut the connection immediately."
+        </div>
+    </section>
+
+    <!-- Slide 11 -->
+    <section class="slide-page">
+        <h2>Slide 11: Data Flow Diagram (DFD) Level 1.1 (System Deep-Dive)</h2>
+        <div class="script-box">
+            "Direct view of the correlation engine. Simultaneously reads raw packets and polls <code>/proc</code> to
+            identify which app owns each connection in real-time."
+        </div>
+    </section>
+
+    <!-- Slide 12 -->
+    <section class="slide-page">
+        <h2>Slide 12: Network & System Architecture Diagram</h2>
+        <div class="script-box">
+            "Physical path: Internet -> Attacker -> ISP -> Router -> Local Host. Flow acts at the 'last hop,' inspecting
+            the bridge between apps and the network where external firewalls can't see."
+        </div>
+    </section>
+
+    <!-- Slide 13 -->
+    <section class="slide-page">
+        <h2>Slide 13: Local Telemetry Store - Schema I</h2>
+        <div class="script-box">
+            "Database structure: Enriches every connection with app name, parent process, and GeoIP country code. Allows
+            for fast forensic tracing."
+        </div>
+
+        <div class="schema-header mono">TABLE: core_connection (Socket Metadata)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:20%">Field</th>
+                    <th style="width:25%">Logic / Interaction</th>
+                    <th>Technical Justification</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>pid / ppid</td>
+                    <td class="mono">get_proc_name_from_pid()</td>
+                    <td>Essential for detecting parent-child shell spawning cycles in EDR.</td>
+                </tr>
+                <tr>
+                    <td>process_name</td>
+                    <td class="mono">/proc/{pid}/exe</td>
+                    <td>Absolute path tracking allows for secure binary whitelisting.</td>
+                </tr>
+                <tr>
+                    <td>src_country</td>
+                    <td class="mono">lookup_ip() (GeoIP2)</td>
+                    <td>Local MaxMind resolution ensures 100% offline geospatial forensics.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="schema-header mono">TABLE: core_alert (Audit Trail)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:20%">Field</th>
+                    <th style="width:25%">Logic / Interaction</th>
+                    <th>Technical Justification</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>alert_type</td>
+                    <td class="mono">classify_scan()</td>
+                    <td>Categorizes threats (e.g., 'Fast Scan' vs 'Stealth Scan') via temporal analysis.</td>
+                </tr>
+                <tr>
+                    <td>connection_id</td>
+                    <td class="mono">ForeignKey(Connection)</td>
+                    <td>Enables analyst pivoting from high-level alerts to raw network packets.</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Slide 14 -->
+    <section class="slide-page">
+        <h2>Slide 14: Local Telemetry Store - Schema II</h2>
+        <div class="script-box">
+            "Quarantine and block-list management. Uses <strong>fuzzy matching</strong> to find polymorphic malware
+            variants. Manages temporary IP blocks with automatic expiration."
+        </div>
+
+        <div class="schema-header mono">TABLE: core_quarantinedfile (Sandbox)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:20%">Field</th>
+                    <th style="width:25%">Logic / Interaction</th>
+                    <th>Technical Justification</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>tlsh</td>
+                    <td class="mono">calculate_hashes()</td>
+                    <td><strong>Fuzzy Hash</strong>: Superior to SHA256 for catching polymorphic variants.</td>
+                </tr>
+                <tr>
+                    <td>match_distance</td>
+                    <td class="mono">Fuzzy Match logic</td>
+                    <td>Smaller distances indicate higher confidence in variant detection.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="schema-header mono">TABLE: core_blockedip & core_watchedfolder</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:20%">Field</th>
+                    <th style="width:25%">Logic / Interaction</th>
+                    <th>Technical Justification</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>expires_at</td>
+                    <td class="mono">Dynamic Decay logic</td>
+                    <td>Prevents permanent IP blocking, allowing for auto-remediation.</td>
+                </tr>
+                <tr>
+                    <td>path</td>
+                    <td class="mono">FolderWatcher events</td>
+                    <td>Real-time filesystem monitoring for dropper detection (e.g., in /tmp/).</td>
+                </tr>
+                <tr>
+                    <td>auto_quarantine</td>
+                    <td class="mono">on_created()</td>
+                    <td>Automated immediate file isolation based on signature matches.</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Slide 15 -->
+    <section class="slide-page">
+        <h2>Slide 15: Testing & Verification Strategy</h2>
+        <div class="script-box">
+            "Verification uses <strong>Pytest</strong> for logic, <strong>Ruff</strong> and <strong>Mypy</strong> for
+            code quality, and <strong>Bandit</strong> for security scans. Entropy tests ensure zero data leakage from
+            the local host."
+        </div>
+        <div class="tool-list">
+            <strong>EDR Verification Suite:</strong>
+            <span class="tech-tag">Pytest (Unit)</span> <span class="tech-tag">Ruff (Lint)</span> <span
+                class="tech-tag">Mypy (Types)</span> <span class="tech-tag">Bandit (Security)</span>
+        </div>
+        <div class="stack-note">
+            <strong>Architecture Note:</strong> <strong>PyQt6</strong> ensures a responsive UI, while
+            <strong>libcap</strong> enforces the principle of least privilege.
+        </div>
+    </section>
+
+    <!-- Technical Syntax Reference -->
+    <section class="slide-page">
+        <h2>Reference: Key Technical Syntax</h2>
+        <div class="script-box">
+            "Direct code patterns used in Flow's implementation:"
+        </div>
+
+        <div class="schema-header mono">1. Process-to-Socket Mapping (psutil)</div>
+        <div class="stack-note"
+            style="font-family: 'JetBrains Mono', monospace; white-space: pre-wrap; background: #f4f4f4; border: 1px solid #ddd; padding: 15px;">
+            for proc in psutil.process_iter(['pid', 'name']):
+            # Find established network connections for this PID
+            connections = proc.connections(kind='inet')
+            for conn in connections:
+            if conn.status == 'ESTABLISHED':
+            remote_ip = conn.raddr.ip</div>
+
+        <div class="schema-header mono">2. Firewall Mitigation (nftables)</div>
+        <div class="stack-note"
+            style="font-family: 'JetBrains Mono', monospace; white-space: pre-wrap; background: #f4f4f4; border: 1px solid #ddd; padding: 15px;">
+            # Blocking an IPv4 address immediately
+            subprocess.run(["nft", "add", "element", "inet", "flow_table", "flow_blocked_ipv4",
+            "{ 192.168.1.100 timeout 3600s }"])</div>
+
+        <div class="schema-header mono">3. Fuzzy Malware Hashing (Tool: Trend Micro TLSH)</div>
+        <div class="stack-note"
+            style="font-family: 'JetBrains Mono', monospace; white-space: pre-wrap; background: #f4f4f4; border: 1px solid #ddd; padding: 15px;">
+            # Compute TLSH and check distance to known malware
+            import tlsh
+            tl = tlsh.Tlsh()
+            with open(path, "rb") as f:
+            tl.update(f.read())
+            tl.final()
+            t_hash = tl.hexdigest()
+
+            dist = tlsh.diff(t_hash, known_malware_hash)
+            if dist < 50: # High similarity threshold quarantine_file(path)</div>
+
+                <div class="schema-header mono">4. Cryptographic Hashing (Tool: Python hashlib)</div>
+                <div class="stack-note"
+                    style="font-family: 'JetBrains Mono', monospace; white-space: pre-wrap; background: #f4f4f4; border: 1px solid #ddd; padding: 15px;">
+                    # Generate exact SHA256 fingerprint
+                    import hashlib
+                    h = hashlib.sha256()
+                    with open(path, "rb") as f:
+                    h.update(f.read())
+                    sha256_val = h.hexdigest()</div>
+
+                <div class="schema-header mono">5. Secure Privilege Separation (Unix Socket)</div>
+                <div class="stack-note"
+                    style="font-family: 'JetBrains Mono', monospace; white-space: pre-wrap; background: #f4f4f4; border: 1px solid #ddd; padding: 15px;">
+                    # Core app talks to Root Helper via privileged socket
+                    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                    sock.connect("/run/flow/firewall.sock")
+                    sock.sendall(f"BLOCK_IP {ip} {reason}".encode())</div>
+    </section>
+
+    <!-- Database Table Design Reference -->
+    <section class="slide-page">
+        <h2>Reference: Database Table Design</h2>
+        <div class="script-box">
+            "Exhaustive schema design for the FLOW telemetry store:"
+        </div>
+
+        <div class="schema-header mono">Table: core_connection (Network Events)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column Name</th>
+                    <th>Data Type</th>
+                    <th>Constraint</th>
+                    <th>What it's for</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>AutoField</td>
+                    <td>PK, Unique</td>
+                    <td>Primary key for the connection record.</td>
+                </tr>
+                <tr>
+                    <td>src_ip / dst_ip</td>
+                    <td>GenericIPAddress</td>
+                    <td>NotNull, Indexed</td>
+                    <td>Unpacked IPv4/IPv6 addresses.</td>
+                </tr>
+                <tr>
+                    <td>src_port / dst_port</td>
+                    <td>PositiveInteger</td>
+                    <td>NotNull</td>
+                    <td>TCP/UDP port numbers.</td>
+                </tr>
+                <tr>
+                    <td>pid</td>
+                    <td>Integer</td>
+                    <td>NotNull, Indexed</td>
+                    <td>Owner process ID at the time of connection.</td>
+                </tr>
+                <tr>
+                    <td>process_name</td>
+                    <td>CharField(200)</td>
+                    <td>NotNull</td>
+                    <td>Name of the parent executable.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="schema-header mono">Table: core_alert (Security Incidents)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column Name</th>
+                    <th>Data Type</th>
+                    <th>Constraint</th>
+                    <th>What it's for</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>alert_type</td>
+                    <td>CharField(100)</td>
+                    <td>NotNull, Indexed</td>
+                    <td>Category (e.g., 'Reverse Shell', 'Scan').</td>
+                </tr>
+                <tr>
+                    <td>severity</td>
+                    <td>CharField(20)</td>
+                    <td>Default: 'medium'</td>
+                    <td>Priority level for analyst review.</td>
+                </tr>
+                <tr>
+                    <td>connection_id</td>
+                    <td>ForeignKey</td>
+                    <td>FK (set_null)</td>
+                    <td>Link to the raw connection event.</td>
+                </tr>
+                <tr>
+                    <td>message</td>
+                    <td>TextField</td>
+                    <td>NotNull</td>
+                    <td>Full technical details of the detection.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="schema-header mono">Table: core_quarantinedfile (Malware Repository)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column Name</th>
+                    <th>Data Type</th>
+                    <th>Constraint</th>
+                    <th>What it's for</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>filename</td>
+                    <td>CharField(255)</td>
+                    <td>NotNull</td>
+                    <td>Original name of the suspicious file.</td>
+                </tr>
+                <tr>
+                    <td>sha256</td>
+                    <td>CharField(64)</td>
+                    <td>NotNull, Indexed</td>
+                    <td>Unique file hash for exact matching.</td>
+                </tr>
+                <tr>
+                    <td>tlsh</td>
+                    <td>CharField(128)</td>
+                    <td>NotNull</td>
+                    <td>Fuzzy hash for similarity analysis.</td>
+                </tr>
+                <tr>
+                    <td>match_distance</td>
+                    <td>Integer</td>
+                    <td>Nullable</td>
+                    <td>Confidence score of the fuzzy match.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="schema-header mono">Table: core_blockedip (Firewall State)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column Name</th>
+                    <th>Data Type</th>
+                    <th>Constraint</th>
+                    <th>What it's for</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>ip</td>
+                    <td>CharField(45)</td>
+                    <td>Unique, NotNull</td>
+                    <td>Target IP address to drop.</td>
+                </tr>
+                <tr>
+                    <td>expires_at</td>
+                    <td>DateTimeField</td>
+                    <td>Nullable</td>
+                    <td>Expiration time for auto-unblocking.</td>
+                </tr>
+                <tr>
+                    <td>reason</td>
+                    <td>TextField</td>
+                    <td>NotNull</td>
+                    <td>Audit note on why the IP was blocked.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="schema-header mono">Table: core_malwaresignature (Threat Intelligence)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column Name</th>
+                    <th>Data Type</th>
+                    <th>Constraint</th>
+                    <th>What it's for</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>sha256</td>
+                    <td>CharField(64)</td>
+                    <td>Unique, NotNull</td>
+                    <td>Exact hash of known malware samples.</td>
+                </tr>
+                <tr>
+                    <td>tlsh</td>
+                    <td>CharField(80)</td>
+                    <td>Nullable</td>
+                    <td>Fuzzy hash for variant detection.</td>
+                </tr>
+                <tr>
+                    <td>family</td>
+                    <td>CharField(128)</td>
+                    <td>NotNull</td>
+                    <td>Malware family name (e.g., 'Metasploit').</td>
+                </tr>
+                <tr>
+                    <td>severity</td>
+                    <td>CharField(32)</td>
+                    <td>Default: 'high'</td>
+                    <td>Threat level of this signature.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="schema-header mono">Table: core_watchedfolder (Filesystem Monitor)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column Name</th>
+                    <th>Data Type</th>
+                    <th>Constraint</th>
+                    <th>What it's for</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>path</td>
+                    <td>CharField(500)</td>
+                    <td>Unique, NotNull</td>
+                    <td>Absolute path being monitored.</td>
+                </tr>
+                <tr>
+                    <td>recursive</td>
+                    <td>BooleanField</td>
+                    <td>Default: True</td>
+                    <td>Whether to watch subdirectories.</td>
+                </tr>
+                <tr>
+                    <td>auto_quarantine</td>
+                    <td>BooleanField</td>
+                    <td>Default: False</td>
+                    <td>Immediate isolation on file creation.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="schema-header mono">Table: core_appsetting (Global Configuration)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Column Name</th>
+                    <th>Data Type</th>
+                    <th>Constraint</th>
+                    <th>What it's for</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>key</td>
+                    <td>CharField(128)</td>
+                    <td>Unique, NotNull</td>
+                    <td>Configuration identifier.</td>
+                </tr>
+                <tr>
+                    <td>value</td>
+                    <td>TextField</td>
+                    <td>NotNull</td>
+                    <td>Serialized setting value.</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- Slide 16 -->
+    <section class="slide-page">
+        <h2>Slide 16: Questions?</h2>
+        <div class="script-box">
+            "Technical summary: Private, lightweight Linux EDR. Focus: Kernel integration and automated response. Open
+            for questions on architecture or design."
+        </div>
+    </section>
+
+</body>
+
+</html>

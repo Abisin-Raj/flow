@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EDR Viva Questions and Answers (A4)</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 16mm;
+    }
+
+    :root {
+      --text: #1a1a1a;
+      --muted: #4a4a4a;
+      --accent: #0b5fff;
+      --border: #d9d9d9;
+      --bg: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: #f3f5f8;
+      line-height: 1.4;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 12px auto;
+      background: var(--bg);
+      padding: 16mm;
+      border: 1px solid var(--border);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 21px;
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin: 0 0 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .qa {
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #e4e7ec;
+      break-inside: avoid;
+    }
+
+    .q {
+      margin: 0 0 4px;
+      font-weight: 700;
+      font-size: 13.5px;
+    }
+
+    .a {
+      margin: 0;
+      font-size: 12.5px;
+      color: #222;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      font-size: 11px;
+      color: #666;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        margin: 0;
+        border: none;
+        width: auto;
+        min-height: auto;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>25 Viva Questions & Answers on EDR and Network Security</h1>
+    <p class="subtitle">Prepared for technical viva practice | Layout optimized for A4 print/PDF export.</p>
+
+    <section class="qa"><p class="q">1) What is EDR, and how is it different from a traditional antivirus?</p><p class="a">EDR (Endpoint Detection and Response) continuously collects endpoint telemetry, detects suspicious behavior, and supports investigation and response. Traditional antivirus mainly relies on signature-based malware detection and usually has less deep investigation capability.</p></section>
+    <section class="qa"><p class="q">2) Why is behavioral detection important in modern security tools?</p><p class="a">Attackers frequently modify malware to evade signatures. Behavioral detection looks at actions (e.g., process injection, unusual privilege escalation, data exfiltration patterns), which helps detect unknown or polymorphic threats.</p></section>
+    <section class="qa"><p class="q">3) Explain the difference between false positive and false negative in threat detection.</p><p class="a">A false positive is benign activity incorrectly flagged as malicious. A false negative is malicious activity missed by detection logic. Security tuning tries to reduce both, but minimizing false negatives is often prioritized in high-risk environments.</p></section>
+    <section class="qa"><p class="q">4) What are common telemetry sources used by an endpoint security platform?</p><p class="a">Process creation trees, command-line arguments, file changes, network connections, DNS lookups, registry events, user logins, and system service events are common telemetry sources.</p></section>
+    <section class="qa"><p class="q">5) What is the principle of least privilege, and why does it matter?</p><p class="a">Least privilege means users/services get only the permissions they need. It reduces blast radius if credentials are stolen and prevents many privilege abuse and lateral movement paths.</p></section>
+    <section class="qa"><p class="q">6) Define IOC and IOA. How are they different?</p><p class="a">IOC (Indicator of Compromise) is evidence of known compromise (e.g., malicious hash or domain). IOA (Indicator of Attack) focuses on attacker behavior patterns (e.g., suspicious script chains), often identifying attacks earlier.</p></section>
+    <section class="qa"><p class="q">7) What is a reverse shell, and why is it dangerous?</p><p class="a">A reverse shell is when a compromised host initiates a connection back to an attacker, giving remote command execution. It bypasses some inbound firewall rules and can enable persistent unauthorized control.</p></section>
+    <section class="qa"><p class="q">8) How can unusual outbound traffic indicate compromise?</p><p class="a">Beacons to rare IPs, encrypted traffic to suspicious domains, unusual protocols at odd hours, or data spikes can indicate command-and-control or data exfiltration activity.</p></section>
+    <section class="qa"><p class="q">9) What is ARP spoofing, and what is its impact on a local network?</p><p class="a">ARP spoofing sends forged ARP replies to map the attacker MAC to another host's IP (often gateway). This can enable man-in-the-middle interception, traffic tampering, or session hijacking.</p></section>
+    <section class="qa"><p class="q">10) What is port scanning, and how should a defender respond?</p><p class="a">Port scanning probes systems for open services and potential weaknesses. Defenders should correlate scan patterns, harden exposed services, rate-limit probes, alert analysts, and optionally block abusive sources.</p></section>
+
+    <section class="qa"><p class="q">11) Why is process ancestry useful during incident investigation?</p><p class="a">Process ancestry shows parent-child execution chains. It helps identify suspicious launch paths such as Office spawning script engines or shell processes starting unusual binaries.</p></section>
+    <section class="qa"><p class="q">12) What is MITRE ATT&CK, and how is it used in SOC operations?</p><p class="a">MITRE ATT&CK is a knowledge base of adversary tactics and techniques. SOC teams map detections to ATT&CK techniques to evaluate coverage, prioritize gaps, and improve incident triage.</p></section>
+    <section class="qa"><p class="q">13) What is geolocation enrichment in alerts?</p><p class="a">It adds location context for IP addresses in alerts. This helps analysts quickly spot impossible travel, unusual foreign logins, or suspicious traffic destinations.</p></section>
+    <section class="qa"><p class="q">14) Why are threat intelligence feeds useful, and what are their limitations?</p><p class="a">Feeds provide known malicious domains, hashes, and IPs, speeding detection and blocking. Limitations include stale indicators, false positives, and limited value against novel attacker infrastructure.</p></section>
+    <section class="qa"><p class="q">15) Explain quarantine versus deletion in malware response.</p><p class="a">Quarantine isolates suspicious files so they cannot execute while preserving them for analysis and possible recovery. Deletion permanently removes files but may destroy forensic evidence and cause accidental data loss.</p></section>
+    <section class="qa"><p class="q">16) What is lateral movement?</p><p class="a">Lateral movement is the attacker’s process of moving from one compromised system to others inside the network, often using stolen credentials, remote services, or trust relationships.</p></section>
+    <section class="qa"><p class="q">17) Why is alert severity prioritization necessary?</p><p class="a">Security teams face alert volume limits. Severity scoring helps prioritize high-impact/high-confidence events first, reducing response time for critical incidents.</p></section>
+    <section class="qa"><p class="q">18) What is a playbook in incident response?</p><p class="a">A playbook is a predefined, step-by-step response workflow for specific incident types (e.g., ransomware, phishing). It improves consistency, speed, and compliance.</p></section>
+    <section class="qa"><p class="q">19) What does "defense in depth" mean?</p><p class="a">It means layering controls (network, endpoint, identity, application, monitoring, backup) so that if one control fails, others still reduce attack success and impact.</p></section>
+    <section class="qa"><p class="q">20) Why are logs and timestamps critical in forensic analysis?</p><p class="a">They allow reconstruction of attacker timeline, correlation across systems, and evidence preservation for root-cause analysis and reporting.</p></section>
+
+    <section class="qa"><p class="q">21) What is the role of firewall automation in endpoint response?</p><p class="a">Firewall automation can quickly block malicious IPs/domains, reduce dwell time, and apply policy consistently. It should include safeguards to avoid blocking business-critical traffic by mistake.</p></section>
+    <section class="qa"><p class="q">22) Why should security tools support exportable reports (CSV/PDF/JSON)?</p><p class="a">Exportable reports enable audits, management communication, threat sharing, long-term analysis, and integration with SIEM/SOAR pipelines.</p></section>
+    <section class="qa"><p class="q">23) What key metrics indicate detection-and-response maturity?</p><p class="a">MTTD (Mean Time to Detect), MTTR (Mean Time to Respond), false-positive rate, detection coverage by ATT&CK technique, and incident recurrence are core maturity metrics.</p></section>
+    <section class="qa"><p class="q">24) How do you safely test detection rules in production-like environments?</p><p class="a">Use controlled simulations in staging/sandbox where possible, run known benign test patterns, monitor alert outcomes, and roll out rule changes gradually with rollback options.</p></section>
+    <section class="qa"><p class="q">25) What are ethical and legal considerations in endpoint monitoring?</p><p class="a">Organizations must follow privacy laws, internal policy, and proportional monitoring principles. Access to telemetry should be role-based, audited, and limited to legitimate security purposes.</p></section>
+
+    <p class="footer-note">Tip: Open this file in a browser and choose “Print → Save as PDF” for an A4-ready PDF copy.</p>
+  </main>
+</body>
+</html>

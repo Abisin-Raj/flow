@@ -4,3 +4,4 @@ Research point 3
 Research point 4
 Research point 5
 Research point 6
+Research point 7

@@ -6,7 +6,7 @@ The app is designed for a single Linux machine. It is not a central SIEM. Think 
 
 ## FEATURES
 
-Flow tracks network activity through netstat based polling and optional raw packet sniffing. It records connections in SQLite and shows them in the desktop UI.
+Flow tracks network activity through netstat based polling and optional raw packet sniffing. It records connections in PostgreSQL and shows them in the desktop UI.
 
 An alert engine raises alerts for patterns such as high connection rate, port scans, reverse shell behavior, rare outbound ports, ARP anomalies and gateway poisoning.
 
@@ -32,6 +32,8 @@ Collectors in `core.collectors` run background threads for connection collection
 Detectors include light_sniffer, packet_sniffer, rare_port_detector, rev_shell_detector, rev_shell_blocker, ARP MITM and scan_detector.
 
 File scanning code sits in `core.file_scanner` and `core.file_scan_service`. It records to `QuarantinedFile` and `MalwareSignature`.
+
+For detailed technical requirements, see [system_study.md](file:///home/abisin/flow/system_study.md).
 
 ## SETUP REQUIREMENTS
 
@@ -170,13 +172,13 @@ Settings are stored in two places.
 *   Dynamic settings live in the `AppSetting` model and are accessed via `core.settings_api`. The Settings tab in the UI writes and reads those values.
 
 Important directories:
-*   Database file: `db.sqlite3` in the project directory.
+*   Database: PostgreSQL database named `flowdb`.
 *   Logs: `~/.flow_logs/app.log` and related files.
 *   CSV exports: `~/.flow_exports`.
 *   High severity CSV log: `~/.flow_csv`.
 *   Quarantine: `~/.flow_quarantine`.
 
-You should treat `db.sqlite3` and `~/.flow_quarantine` as sensitive. They show historical connections, alerts and paths to malware.
+You should treat the database and `~/.flow_quarantine` as sensitive. They show historical connections, alerts and paths to malware.
 
 ## TESTING AND VERIFICATION
 
@@ -215,14 +217,15 @@ For shipping the app you should:
 If you encounter database errors or need a fresh start:
 
 1.  Stop the application.
-2.  Remove the database file:
+2.  Drop and recreate the PostgreSQL database:
     ```bash
-    sudo rm /opt/flow/db.sqlite3
+    sudo -u postgres dropdb flowdb
+    sudo -u postgres createdb flowdb -O flowuser
     ```
 3.  Recreate the database structure:
     ```bash
     cd /opt/flow
-    sudo venv/bin/python3 manage.py migrate
+    venv/bin/python3 manage.py migrate
     ```
 4.  Restart the application:
     ```bash

@@ -22,19 +22,33 @@ _COOLDOWN_SECONDS = 300  # do not alert again for same src+port within 5 minutes
 
 # Allowlist of common ports that are generally safe/expected
 _COMMON_PORTS = {
-    80,  # HTTP
-    443,  # HTTPS
-    53,  # DNS
-    123,  # NTP
-    587,  # SMTP submission
-    25,  # SMTP
-    110,  # POP3
-    143,  # IMAP
-    993,  # IMAPS
-    995,  # POP3S
-    22,  # SSH
+    80,    # HTTP
+    443,   # HTTPS
+    53,    # DNS
+    123,   # NTP
+    587,   # SMTP submission
+    25,    # SMTP
+    110,   # POP3
+    143,   # IMAP
+    993,   # IMAPS
+    995,   # POP3S
+    22,    # SSH
     3389,  # RDP
-    51820,  # WireGuard default, avoid spamming your own VPN
+    51820, # WireGuard default, avoid spamming your own VPN
+    # --- Google Services ---
+    5228,  # Google Firebase Cloud Messaging (FCM) / GCM
+    5229,  # Google FCM (alternate)
+    5230,  # Google FCM (alternate)
+    # --- Apple Push Notifications ---
+    2195,  # APNs
+    2196,  # APNs feedback
+    # --- Common App Ports ---
+    8080,  # HTTP alternate / dev servers
+    8443,  # HTTPS alternate
+    3478,  # STUN/TURN (WebRTC, video calls)
+    5349,  # STUN/TURN over TLS
+    1194,  # OpenVPN
+    4500,  # IPSec NAT-T
 }
 
 # state: (src_ip, dst_port) -> [timestamps...]

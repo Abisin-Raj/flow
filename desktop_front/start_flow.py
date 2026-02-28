@@ -199,6 +199,7 @@ def start_notifications(main_window):
             
             # 2. Run auto-mitigation checks
             try:
+                from core import auto_mitigator
                 auto_mitigator.process_alert(alert_obj)
             except Exception as e:
                 logging.error("Auto-mitigation failed for alert %s: %s", alert_obj.id, e)

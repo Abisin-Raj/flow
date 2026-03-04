@@ -38,3 +38,23 @@ try:
 except Exception as e:
     log.warning("Failed to import light_sniffer: %s", e)
     start_light_sniffer = None
+
+# rare_port_detector is event-driven via handle_connection, no background thread needed
+
+# ARP collector is deprecated in favor of detector
+start_arp_mitm_collector = None
+
+try:
+    from core.arp_mitm_detector import start_arp_mitm_detector
+except Exception as e:
+    log.warning("Failed to import start_arp_mitm_detector: %s", e)
+    start_arp_mitm_detector = None
+
+
+try:
+    from core.rev_shell_detector import start_rev_shell_detector
+except Exception as e:
+    log.warning("Failed to import rev_shell_detector: %s", e)
+    start_rev_shell_detector = None
+
+try:

@@ -16,3 +16,21 @@ import threading
 import time
 
 from django.db import close_old_connections
+
+from core.alert_engine import create_alert_with_geo
+
+log = logging.getLogger("core.dns_monitor")
+
+_POLL_INTERVAL = 20  # seconds between scans
+
+# ---------------------------------------------------------------------------
+# Built-in block-list of known malicious / C2 DNS servers and open resolvers
+# abused by common RAT families. Keep this list conservative to avoid
+# false-positives on legitimate privacy resolvers.
+# Sources: abuse.ch, SANS ISC, MalwareBazaar C2 feeds (static snapshot).
+# ---------------------------------------------------------------------------
+_BLOCKED_DNS_IPS: set[str] = {
+    # Well-known abuse-prone open resolvers used as C2 relay
+    "185.220.101.1",
+    "185.220.101.2",
+    "185.220.101.3",

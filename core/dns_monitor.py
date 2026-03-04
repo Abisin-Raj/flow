@@ -142,3 +142,10 @@ class DnsMonitor(threading.Thread):
 
     def stop(self):
         self.running = False
+
+
+def start_dns_monitor() -> DnsMonitor:
+    """Start the DNS monitor background thread and return it."""
+    monitor = DnsMonitor()
+    monitor.start()
+    return monitor

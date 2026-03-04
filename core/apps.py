@@ -34,3 +34,12 @@ class CoreConfig(AppConfig):
         try:
             from . import signals  # noqa: F401
         except Exception:
+            pass
+
+        # Stage 4 – Exploitation: ensure /tmp and /dev/shm are always watched.
+        # These kernel-provided tmpfs paths are the most common staging areas for
+        # exploit payloads and dropper scripts. We seed them as WatchedFolder
+        # entries with auto-quarantine on, creating them only if absent so that
+        # user-configured settings (e.g. disabled) are never overwritten.
+        import threading
+        threading.Timer(3.0, _seed_exploit_staging_watchers).start()

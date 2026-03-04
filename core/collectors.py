@@ -398,3 +398,23 @@ def parse_netstat_output():
             }
         )
 
+    return results
+
+
+def split_address(addr: str):
+    """
+    Split 'ip:port' into (ip, port_int).
+    Handles '*:*' and '0.0.0.0:*'.
+    """
+    if addr in ("*:*", "0.0.0.0:*", ":::*"):
+        return addr, 0
+
+    ip, sep, port = addr.rpartition(":")
+    if sep == "":
+        return addr, 0
+
+    try:
+        port_int = int(port)
+    except ValueError:
+        port_int = 0
+

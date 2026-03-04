@@ -278,3 +278,23 @@ def parse_ss_output():
         else:
             # Fallback for older ss versions or different column layouts without Netid explicitly first
             # Check if first column is a state string or a number
+            first_col_is_state = False
+
+            if parts[0].isdigit():
+                 first_col_is_state = False
+            elif parts[0] in ("ESTAB", "LISTEN", "UNCONN", "TIME-WAIT", "CLOSE-WAIT", "SYN-SENT", "SYN-RECV", "FIN-WAIT-1", "FIN-WAIT-2", "CLOSE", "CLOSING", "LAST-ACK"):
+                 first_col_is_state = True
+                 state = parts[0]
+            else:
+                 # Heuristic: if it looks like an IP, definitely not state
+                 if "." in parts[0] or ":" in parts[0]:
+                      first_col_is_state = False
+                 else:
+                      # Assume state if it's a word
+                      first_col_is_state = not parts[0].isdigit()
+                      if first_col_is_state:
+                          state = parts[0]
+
+            # Indices based on column presence
+            if first_col_is_state:
+                 # [State, RecvQ, SendQ, Local, Peer, Process...]

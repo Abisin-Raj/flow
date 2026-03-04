@@ -178,3 +178,23 @@ def create_attributed_alert(src_ip, src_port, dst_ip, dst_port, message, severit
     try:
         pid = find_pid_for_connection(src_ip, src_port, dst_ip, dst_port)
         proc_name = get_proc_name_from_pid(pid) if pid else None
+    except Exception:
+        proc_name = None
+
+    if proc_name and cfg.is_process_ignored_name(proc_name):
+        log.info("Skipping alert for ignored process %s pid=%s", proc_name, pid)
+        return None
+
+    # Import here to avoid circular imports at module import time
+    from core.alert_engine import create_alert_for_connection
+
+    try:
+        return create_alert_for_connection(
+            src_ip=src_ip,
+            dst_ip=dst_ip,
+            dst_port=dst_port,
+            message=message,
+            severity=severity,
+            proc_name=proc_name,
+            **kwargs,
+        )

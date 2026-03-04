@@ -112,3 +112,22 @@ class TxSpikeDetector(threading.Thread):
                 continue
 
             prev = self._prev.get(iface)
+            self._prev[iface] = current
+
+            if prev is None:
+                continue
+
+            # Handle counter wrap-around (unlikely on 64-bit kernels but safe)
+            delta = current - prev if current >= prev else 0
+
+            if delta < threshold_bytes:
+                continue
+
+            # Check cooldown
+            last = self._last_alert.get(iface, 0.0)
+            if now - last < _COOLDOWN:
+                continue
+            self._last_alert[iface] = now
+
+            delta_mb = delta / (1024 * 1024)
+            threshold_mb = _get_threshold_mb()

@@ -598,3 +598,23 @@ def evaluate_alert_rules(conn: Connection, now):
             process_name=conn.process_name,
         )
         return
+
+    status_lower = (conn.status or "").lower()
+
+    if "syn_sent" in status_lower or "syn" in status_lower:
+        recent_syn = recent_same_src.filter(status__icontains="SYN").count()
+        if recent_syn > syn_threshold:
+            create_alert_for_connection(
+                src_ip=conn.src_ip,
+                message=f"Repeated SYN connections from {conn.src_ip} ({recent_syn} recent SYN states)",
+                alert_type="SYN Flood",
+                severity="medium",
+                connection=conn,
+                pid=conn.pid,
+                process_name=conn.process_name,
+            )
+            return
+
+    src_ip = conn.src_ip or ""
+    is_localhost = src_ip in ("127.0.0.1", "localhost", "::1") or src_ip.startswith("127.0.")
+

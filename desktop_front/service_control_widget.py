@@ -63,3 +63,16 @@ class ServiceControlWidget(QWidget):
         self.chk_sniffer.setChecked(flags.get("sniffer", True))
 
         self.chk_light = QCheckBox("Enable light sniffer (/proc/net/tcp)")
+        self.chk_light.setChecked(flags.get("light_sniffer", True))
+
+        self.chk_alert_watch = QCheckBox("Enable alert watcher (tray notifications)")
+        self.chk_alert_watch.setChecked(flags.get("alert_watcher", True))
+
+        for w in [
+            self.chk_collectors,
+            self.chk_folder,
+            self.chk_sniffer,
+            self.chk_light,
+            self.chk_alert_watch,
+        ]:
+            main.addWidget(w)

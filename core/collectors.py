@@ -658,3 +658,23 @@ def evaluate_alert_rules(conn: Connection, now):
 
 def connection_collector_loop(interval=3):
     """
+    Main background loop for the connection collector.
+    
+    Periodically:
+    1.  Collects active connections using the best available tool (`ss` > `/proc` > `netstat`).
+    2.  Parses the output.
+    3.  Saves to DB and analyzes for threats.
+    4.  Sleeps for `interval`.
+    
+    Handles DB errors gracefully with exponential backoff to prevent log spam/crashing.
+    """
+    from django.db import connection
+    from django.db.utils import DatabaseError
+
+    backoff = 1
+    max_backoff = 60
+    consecutive_db_errors = 0
+    DB_ERROR_THRESHOLD = 5
+
+    while True:
+        try:

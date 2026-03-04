@@ -520,3 +520,90 @@ def evaluate_alert_rules(conn: Connection, now):
 
     Args:
         conn (Connection): The connection instance to evaluate.
+        now (datetime): Current timestamp.
+    """
+    if not conn.src_ip:
+        return
+
+    # Check if this connection is from an ignored process
+    try:
+        pid = find_pid_for_connection(
+            conn.src_ip, conn.src_port, conn.dst_ip, conn.dst_port
+        )
+        proc_name = get_proc_name_from_pid(pid) if pid else None
+        if proc_name and cfg.is_process_ignored_name(proc_name):
+            log.info(
+                "Skipping alert for connection owned by ignored process %s (pid=%s)",
+                proc_name, pid
+            )
+            return
+    except Exception as e:
+        log.debug("Process attribution check failed: %s", e)
+
+    settings = cfg.get_detector_settings()
+    if cfg.DEMO_MODE:
+        high_rate_limit = max(5, settings["high_rate_limit"] // 4)
+        high_rate_window = cfg.HIGH_RATE_WINDOW_SECONDS
+        portscan_ports = max(10, cfg.PORTSCAN_DISTINCT_PORTS // 5)
+        portscan_window = cfg.PORTSCAN_WINDOW_SECONDS
+        syn_threshold = max(5, cfg.SYN_THRESHOLD // 5)
+    else:
+        high_rate_limit = settings["high_rate_limit"]
+        high_rate_window = cfg.HIGH_RATE_WINDOW_SECONDS
+        portscan_ports = cfg.PORTSCAN_DISTINCT_PORTS
+        portscan_window = cfg.PORTSCAN_WINDOW_SECONDS
+        syn_threshold = cfg.SYN_THRESHOLD
+
+    window_short = now - timedelta(seconds=high_rate_window)
+    window_long = now - timedelta(seconds=portscan_window)
+
+    recent_same_src = Connection.objects.filter(
+        src_ip=conn.src_ip,
+        timestamp__gte=window_short,
+    )
+
+    count_short = recent_same_src.count()
+
+    if count_short > high_rate_limit:
+        create_alert_for_connection(
+            src_ip=conn.src_ip,
+            message=f"High connection rate from {conn.src_ip} ({count_short} connections in {high_rate_window}s)",
+            alert_type="High Connection Rate",
+            severity="high",
+            connection=conn,
+            pid=conn.pid,
+            process_name=conn.process_name,
+        )
+        return
+
+    recent_ports = (
+        Connection.objects.filter(
+            src_ip=conn.src_ip,
+            timestamp__gte=window_long,
+        )
+        .values_list("dst_port", flat=True)
+        .distinct()
+    )
+
+    distinct_count = recent_ports.count()
+
+    if distinct_count > portscan_ports:
+        create_alert_for_connection(
+            src_ip=conn.src_ip,
+            message=f"Possible port scan from {conn.src_ip} ({distinct_count} unique destination ports in {portscan_window}s)",
+            alert_type="Port Scan",
+            severity="high",
+            connection=conn,
+            pid=conn.pid,
+            process_name=conn.process_name,
+        )
+        return
+
+    status_lower = (conn.status or "").lower()
+
+    if "syn_sent" in status_lower or "syn" in status_lower:
+        recent_syn = recent_same_src.filter(status__icontains="SYN").count()
+        if recent_syn > syn_threshold:
+            create_alert_for_connection(
+                src_ip=conn.src_ip,
+                message=f"Repeated SYN connections from {conn.src_ip} ({recent_syn} recent SYN states)",

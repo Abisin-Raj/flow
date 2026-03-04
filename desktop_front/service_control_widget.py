@@ -34,3 +34,15 @@ class ServiceControlWidget(QWidget):
     """
 
     def __init__(self, parent=None):
+        super().__init__(parent)
+
+        main = QVBoxLayout(self)
+
+        title = QLabel("Flow Service Control")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet("font-size: 18px; font-weight: bold; padding: 8px;")
+
+        info = QLabel(
+            "These toggles control whether services start on the next launch.\n"
+            "They do not hard-stop already running threads."
+        )

@@ -118,3 +118,23 @@ def find_pid_for_connection(src_ip, src_port, dst_ip, dst_port):
             if local_ip == lhex and local_p == lport and remote_ip == rhex and remote_p == rport:
                 inode = parts[9]
                 # Find pid by inode
+                for pid in os.listdir("/proc"):
+                    if not pid.isdigit():
+                        continue
+                    fd_dir = f"/proc/{pid}/fd"
+                    try:
+                        for fd in os.listdir(fd_dir):
+                            try:
+                                target = os.readlink(f"{fd_dir}/{fd}")
+                                if "socket:[" in target and inode in target:
+                                    return int(pid)
+                            except Exception:
+                                continue
+                    except Exception:
+                        continue
+    except Exception:
+        pass
+
+    return None
+
+

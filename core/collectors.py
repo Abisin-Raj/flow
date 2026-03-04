@@ -346,3 +346,90 @@ def parse_netstat_output():
     Without that, process column stays empty, but parsing still works.
     """
     try:
+        output = subprocess.check_output(
+            ["netstat", "-tunp"], stderr=subprocess.DEVNULL
+        ).decode()
+    except Exception as e:
+        log.warning("parse_netstat_output failed: %s", e)
+        return []
+
+    lines = output.strip().splitlines()
+    results = []
+
+    for line in lines:
+        if not (line.startswith("tcp") or line.startswith("udp")):
+            continue
+
+        parts = line.split()
+        if len(parts) < 6:
+            continue
+
+        proto = parts[0]
+        local = parts[3]
+        remote = parts[4]
+
+        if proto.startswith("tcp"):
+            state = parts[5]
+        else:
+            state = "LISTEN"
+
+        # PID/Program name is usually the last column, e.g. "1234/python"
+        # It might be missing if not root
+        pid_prog = parts[6] if len(parts) > 6 else "-"
+        pid = None
+        proc_name = ""
+
+        if pid_prog not in ("-", "0"):
+            pid_str, _, name = pid_prog.partition("/")
+            try:
+                pid = int(pid_str)
+            except ValueError:
+                pid = None
+            proc_name = name or ""
+
+        results.append(
+            {
+                "protocol": proto,
+                "local_address": local,
+                "remote_address": remote,
+                "state": state,
+                "pid": pid,
+                "process_name": proc_name,
+            }
+        )
+
+    return results
+
+
+def split_address(addr: str):
+    """
+    Split 'ip:port' into (ip, port_int).
+    Handles '*:*' and '0.0.0.0:*'.
+    """
+    if addr in ("*:*", "0.0.0.0:*", ":::*"):
+        return addr, 0
+
+    ip, sep, port = addr.rpartition(":")
+    if sep == "":
+        return addr, 0
+
+    try:
+        port_int = int(port)
+    except ValueError:
+        port_int = 0
+
+    return ip, port_int
+
+
+@transaction.atomic
+def save_connections(data_list):
+    """
+    Store parsed Connection data into the database and trigger analysis.
+
+    For each unique connection entry:
+    1.  Parse and validate IP/Port.
+    2.  Enrich with Process Info (PID, PPID, PName).
+    3.  Create a `Connection` record.
+    4.  Pass to `rare_port_detector`.
+    5.  Pass to `evaluate_alert_rules`.
+    

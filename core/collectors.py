@@ -438,3 +438,23 @@ def save_connections(data_list):
     Args:
         data_list (list): List of connection dicts from parsers.
     """
+    now = timezone.now()
+
+    for entry in data_list:
+        src_ip, src_port = split_address(entry["local_address"])
+        dst_ip, dst_port = split_address(entry["remote_address"])
+
+        try:
+            ipaddress.ip_address(src_ip)
+            ipaddress.ip_address(dst_ip)
+        except ValueError:
+            # log.debug("Skipping invalid IP pair: %s -> %s", src_ip, dst_ip)
+            continue
+
+        pid = entry.get("pid")
+        process_name = entry.get("process_name") or ""
+        ppid = None
+        if pid:
+            info = get_process_info(pid)
+            if info:
+                ppid = info.get("ppid") or None

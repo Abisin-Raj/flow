@@ -694,3 +694,90 @@ def connection_collector_loop(interval=3):
                 items = parse_netstat_output()
             
             if items:
+                save_connections(items)
+            
+            # success reset
+            consecutive_db_errors = 0
+            backoff = 1
+            time.sleep(interval)
+
+        except DatabaseError as e:
+            log.warning("DB error in collectors: %s", e)
+            consecutive_db_errors += 1
+            if consecutive_db_errors >= DB_ERROR_THRESHOLD:
+                log.error("Too many DB errors, pausing collectors for %s seconds", max_backoff)
+                time.sleep(max_backoff)
+                consecutive_db_errors = 0
+                backoff = 1
+            else:
+                time.sleep(backoff)
+                backoff = min(backoff * 2, max_backoff)
+
+        except Exception as e:
+            log.warning("Unexpected error in connection_collector_loop: %s", e)
+            time.sleep(interval)
+        finally:
+            close_old_connections()
+
+
+def start_collectors():
+    log.info("Starting collectors")
+
+    try:
+        start_connection_collector()
+    except Exception:
+        log.exception("Failed to start connection collector")
+
+    # Start periodic maintenance thread (cleanup expired blocks, etc.)
+    try:
+        start_maintenance_thread()
+    except Exception:
+        log.exception("Failed to start maintenance thread")
+
+    # start light sniffer (reads /proc/net/tcp) for extra port scan hints
+    if start_light_sniffer:
+        try:
+            start_light_sniffer()
+            log.info("Light sniffer started")
+        except Exception:
+            log.exception("Failed to start light sniffer")
+
+    # start rare port monitor
+    # rare_port_detector is integrated into save_connections loop
+
+    # start ARP MITM detector (unified)
+    # start_arp_mitm_collector is deprecated
+
+    if start_arp_mitm_detector:
+        try:
+            start_arp_mitm_detector()
+            log.info("ARP MITM detector started")
+        except Exception:
+            log.exception("Failed to start ARP MITM detector")
+
+    # start reverse shell detector
+    if start_rev_shell_detector:
+        try:
+            start_rev_shell_detector()
+            log.info("Reverse shell detector started")
+        except Exception:
+            log.exception("Failed to start reverse shell detector")
+
+    # Stage 3 – Delivery: DNS monitor (malicious resolver detection)
+    if start_dns_monitor:
+        try:
+            start_dns_monitor()
+            log.info("DNS monitor started")
+        except Exception:
+            log.exception("Failed to start dns_monitor")
+
+    # Stage 5 – Installation: persistence watcher (cron/systemd)
+    if start_persistence_watcher:
+        try:
+            start_persistence_watcher()
+            log.info("Persistence watcher started")
+        except Exception:
+            log.exception("Failed to start persistence_watcher")
+
+    # Stage 7 – Objectives: TX spike / data exfiltration detector
+    if start_tx_spike_detector:

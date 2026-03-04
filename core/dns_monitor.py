@@ -78,3 +78,19 @@ def _scan_proc_udp() -> list[str]:
                     continue
                 rem = parts[2]  # remote address hex:hexport
                 if ":" not in rem:
+                    continue
+                rem_ip_hex, rem_port_hex = rem.split(":")
+                try:
+                    rem_port = int(rem_port_hex, 16)
+                except ValueError:
+                    continue
+                if rem_port == 53:
+                    ip = _hex_to_ip(rem_ip_hex)
+                    if ip:
+                        destinations.append(ip)
+    except OSError as e:
+        log.debug("Cannot read /proc/net/udp: %s", e)
+    return destinations
+
+
+def _check_cycle():

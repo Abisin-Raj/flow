@@ -46,3 +46,15 @@ class ServiceControlWidget(QWidget):
             "These toggles control whether services start on the next launch.\n"
             "They do not hard-stop already running threads."
         )
+        info.setWordWrap(True)
+
+        main.addWidget(title)
+        main.addWidget(info)
+
+        flags = settings_api.get_service_flags()
+
+        self.chk_collectors = QCheckBox("Enable collectors (connection analyzers)")
+        self.chk_collectors.setChecked(flags.get("collectors", True))
+
+        self.chk_folder = QCheckBox("Enable folder watcher (file quarantine)")
+        self.chk_folder.setChecked(flags.get("folder_watcher", True))

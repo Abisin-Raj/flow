@@ -578,3 +578,23 @@ def evaluate_alert_rules(conn: Connection, now):
 
     recent_ports = (
         Connection.objects.filter(
+            src_ip=conn.src_ip,
+            timestamp__gte=window_long,
+        )
+        .values_list("dst_port", flat=True)
+        .distinct()
+    )
+
+    distinct_count = recent_ports.count()
+
+    if distinct_count > portscan_ports:
+        create_alert_for_connection(
+            src_ip=conn.src_ip,
+            message=f"Possible port scan from {conn.src_ip} ({distinct_count} unique destination ports in {portscan_window}s)",
+            alert_type="Port Scan",
+            severity="high",
+            connection=conn,
+            pid=conn.pid,
+            process_name=conn.process_name,
+        )
+        return

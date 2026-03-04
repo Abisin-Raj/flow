@@ -618,3 +618,23 @@ def evaluate_alert_rules(conn: Connection, now):
     src_ip = conn.src_ip or ""
     is_localhost = src_ip in ("127.0.0.1", "localhost", "::1") or src_ip.startswith("127.0.")
 
+    if conn.dst_port in cfg.SUSPICIOUS_PORTS and not is_localhost:
+        create_alert_for_connection(
+            src_ip=conn.src_ip,
+            message=f"Connection to sensitive port {conn.dst_port} from {conn.src_ip}",
+            alert_type="Sensitive Port",
+            severity="low",
+            connection=conn,
+            pid=conn.pid,
+            process_name=conn.process_name,
+        )
+
+    # 5. Reverse shell suspicious outbound connection
+    try:
+        reverse_ports = cfg.get_port_list("reverse_shell_ports", "4444,5555,1337")
+    except Exception:
+        reverse_ports = [4444, 5555, 1337]
+
+    if (
+        conn.dst_port in reverse_ports
+        and not conn.src_ip.startswith("127.")

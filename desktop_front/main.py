@@ -103,3 +103,24 @@ class FlowWindow(QMainWindow):
         # Try system-wide icon first (when installed)
         icon_path = Path("/usr/share/pixmaps/flow.png")
         if not icon_path.exists():
+            # Try resources folder (development/packaging location)
+            icon_path = Path(__file__).resolve().parent / "resources" / "icon.png"
+        if not icon_path.exists():
+            # Fallback to old icons folder
+            icon_path = Path(__file__).resolve().parent / "icons" / "tray_icon.png"
+
+        if icon_path.exists():
+            icon = QIcon(str(icon_path))
+            self.setWindowIcon(icon)  # Set taskbar icon too
+        else:
+            icon = self.style().standardIcon(
+                self.style().StandardPixmap.SP_ComputerIcon
+            )
+
+        tray = QSystemTrayIcon(icon, self)
+        tray.setToolTip("Flow")
+        menu = QMenu()
+
+        restore_action = QAction("Show", self)
+        restore_action.triggered.connect(self.show_from_tray)
+        menu.addAction(restore_action)

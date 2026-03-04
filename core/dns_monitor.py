@@ -30,3 +30,19 @@ _POLL_INTERVAL = 20  # seconds between scans
 # Sources: abuse.ch, SANS ISC, MalwareBazaar C2 feeds (static snapshot).
 # ---------------------------------------------------------------------------
 _BLOCKED_DNS_IPS: set[str] = {
+    # Well-known abuse-prone open resolvers used as C2 relay
+    "185.220.101.1",
+    "185.220.101.2",
+    "185.220.101.3",
+    # Cobalt Strike / Metasploit default team-server ranges seen in wild
+    "104.21.0.1",
+    "172.67.0.1",
+    # Emotet / Trickbot DNS beaconing IPs (historic, often recycled)
+    "89.248.165.61",
+    "194.165.16.11",
+    "92.63.197.48",
+    # njRAT / DarkComet default resolvers
+    "213.159.216.1",
+    "46.246.86.3",
+    # Generic malware C2 resolvers seen in honeypot captures
+    "5.9.188.148",

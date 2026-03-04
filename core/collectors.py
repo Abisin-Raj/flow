@@ -85,3 +85,90 @@ def find_pid_for_connection(src_ip, src_port, dst_ip, dst_port):
     import os
     
     # Try ss first (faster)
+    try:
+        cmd = ["ss", "-tnp", "state", "established"]
+        out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)
+        for line in out.splitlines():
+            if f"{src_ip}:{src_port}" in line and f"{dst_ip}:{dst_port}" in line:
+                m = re.search(r"pid=(\d+)", line)
+                if m:
+                    return int(m.group(1))
+    except Exception:
+        pass
+
+    # Fallback: scan /proc/net/tcp for local/remote hex tuples then map inode -> pid
+    try:
+        def ipport_to_hex(ip, port):
+            import socket
+            packed = socket.inet_aton(ip)
+            hexip = "".join("{:02X}".format(b) for b in packed[::-1])  # little endian
+            hexport = "{:04X}".format(int(port))
+            return hexip, hexport
+
+        lhex, lport = ipport_to_hex(src_ip, src_port)
+        rhex, rport = ipport_to_hex(dst_ip, dst_port)
+
+        with open("/proc/net/tcp", "r") as f:
+            lines = f.readlines()[1:]
+        for ln in lines:
+            parts = ln.split()
+            local, remote = parts[1], parts[2]
+            local_ip, local_p = local.split(":")
+            remote_ip, remote_p = remote.split(":")
+            if local_ip == lhex and local_p == lport and remote_ip == rhex and remote_p == rport:
+                inode = parts[9]
+                # Find pid by inode
+                for pid in os.listdir("/proc"):
+                    if not pid.isdigit():
+                        continue
+                    fd_dir = f"/proc/{pid}/fd"
+                    try:
+                        for fd in os.listdir(fd_dir):
+                            try:
+                                target = os.readlink(f"{fd_dir}/{fd}")
+                                if "socket:[" in target and inode in target:
+                                    return int(pid)
+                            except Exception:
+                                continue
+                    except Exception:
+                        continue
+    except Exception:
+        pass
+
+    return None
+
+
+def get_proc_name_from_pid(pid):
+    """
+    Get process name from PID using /proc/{pid}/exe or /proc/{pid}/comm.
+    """
+    import os
+    if not pid:
+        return None
+    try:
+        exe = os.readlink(f"/proc/{pid}/exe")
+        return os.path.basename(exe)
+    except Exception:
+        try:
+            with open(f"/proc/{pid}/comm", "r") as f:
+                return f.read().strip()
+        except Exception:
+            return None
+
+
+def create_attributed_alert(src_ip, src_port, dst_ip, dst_port, message, severity="medium", **kwargs):
+    """
+    Find process that owns the connection and either skip alert or attach proc name.
+    
+    This helps in reducing false positives by checking if the process is ignored
+    before raising an alert.
+
+    Args:
+        src_ip (str): Source IP.
+        src_port (int): Source Port.
+        dst_ip (str): Destination IP.
+        dst_port (int): Destination Port.
+        message (str): Alert message.
+        severity (str): Alert severity.
+        **kwargs: Extra arguments for `create_alert_for_connection`.
+

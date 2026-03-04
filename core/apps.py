@@ -70,3 +70,12 @@ def _seed_exploit_staging_watchers():
             continue
         try:
             obj, created = WatchedFolder.objects.get_or_create(
+                path=path,
+                defaults={
+                    "enabled": True,
+                    "recursive": False,
+                    "auto_quarantine": True,
+                },
+            )
+            if created:
+                log.info(

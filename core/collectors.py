@@ -558,3 +558,23 @@ def evaluate_alert_rules(conn: Connection, now):
     window_long = now - timedelta(seconds=portscan_window)
 
     recent_same_src = Connection.objects.filter(
+        src_ip=conn.src_ip,
+        timestamp__gte=window_short,
+    )
+
+    count_short = recent_same_src.count()
+
+    if count_short > high_rate_limit:
+        create_alert_for_connection(
+            src_ip=conn.src_ip,
+            message=f"High connection rate from {conn.src_ip} ({count_short} connections in {high_rate_window}s)",
+            alert_type="High Connection Rate",
+            severity="high",
+            connection=conn,
+            pid=conn.pid,
+            process_name=conn.process_name,
+        )
+        return
+
+    recent_ports = (
+        Connection.objects.filter(

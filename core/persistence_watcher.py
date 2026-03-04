@@ -66,3 +66,20 @@ def _snapshot(paths: list[Path]) -> dict[str, str]:
         elif root.is_dir():
             try:
                 for entry in os.scandir(root):
+                    if entry.is_file(follow_symlinks=False):
+                        digest = _hash_file(Path(entry.path))
+                        if digest:
+                            state[entry.path] = digest
+            except PermissionError:
+                log.debug("No read permission for %s", root)
+    return state
+
+
+def _emit_alert(event: str, path: str):
+    """Raise a persistence alert via the alert engine."""
+    msg = f"Persistence change detected [{event}]: {path}"
+    log.warning(msg)
+    create_alert_with_geo(
+        src_ip=None,
+        message=msg,
+        severity="high",

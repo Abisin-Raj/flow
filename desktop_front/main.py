@@ -40,3 +40,24 @@ class FlowWindow(QMainWindow):
     1. Initialize all feature widgets (Dashboard, Connections, Alerts, etc.).
     2. Manage the tab layout.
     3. Initialize and manage the System Tray icon and menu.
+    4. Handle window lifecycle events (close to tray, etc.).
+    """
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Flow")
+        self.resize(1000, 700)
+
+        self.tabs = QTabWidget()
+        self.setCentralWidget(self.tabs)
+        self.tabs.currentChanged.connect(self._on_tab_changed)
+
+        # main tabs
+        self.dashboard_tab = DashboardWidget(self)
+        self.tabs.addTab(self.dashboard_tab, "Dashboard")
+
+        self.connections_tab = ConnectionsWidget(self)
+        self.tabs.addTab(self.connections_tab, "Connections")
+
+        self.alerts_tab = AlertsWidget(self)
+        self.tabs.addTab(self.alerts_tab, "Alerts")

@@ -518,3 +518,23 @@ def evaluate_alert_rules(conn: Connection, now):
     4.  Sensitive Port Access (connecting to known internal services).
     5.  Reverse Shell patterns (connecting to known C2 ports).
 
+    Args:
+        conn (Connection): The connection instance to evaluate.
+        now (datetime): Current timestamp.
+    """
+    if not conn.src_ip:
+        return
+
+    # Check if this connection is from an ignored process
+    try:
+        pid = find_pid_for_connection(
+            conn.src_ip, conn.src_port, conn.dst_ip, conn.dst_port
+        )
+        proc_name = get_proc_name_from_pid(pid) if pid else None
+        if proc_name and cfg.is_process_ignored_name(proc_name):
+            log.info(
+                "Skipping alert for connection owned by ignored process %s (pid=%s)",
+                proc_name, pid
+            )
+            return
+    except Exception as e:

@@ -158,3 +158,23 @@ def get_proc_name_from_pid(pid):
 
 def create_attributed_alert(src_ip, src_port, dst_ip, dst_port, message, severity="medium", **kwargs):
     """
+    Find process that owns the connection and either skip alert or attach proc name.
+    
+    This helps in reducing false positives by checking if the process is ignored
+    before raising an alert.
+
+    Args:
+        src_ip (str): Source IP.
+        src_port (int): Source Port.
+        dst_ip (str): Destination IP.
+        dst_port (int): Destination Port.
+        message (str): Alert message.
+        severity (str): Alert severity.
+        **kwargs: Extra arguments for `create_alert_for_connection`.
+
+    Returns:
+        Alert or None: Created alert or None if skipped/failed.
+    """
+    try:
+        pid = find_pid_for_connection(src_ip, src_port, dst_ip, dst_port)
+        proc_name = get_proc_name_from_pid(pid) if pid else None

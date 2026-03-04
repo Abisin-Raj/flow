@@ -66,3 +66,20 @@ def _active_interfaces() -> list[str]:
         log.debug("Cannot list %s: %s", _SYS_NET, e)
     return ifaces
 
+
+class TxSpikeDetector(threading.Thread):
+    """
+    Background thread that monitors per-interface TX byte counters and
+    raises an alert when an upload spike consistent with data exfiltration
+    is detected.
+    """
+
+    def __init__(self, interval: int = _POLL_INTERVAL):
+        super().__init__(daemon=True, name="TxSpikeDetector")
+        self.interval = interval
+        self.running = True
+        # iface -> last tx_bytes value
+        self._prev: dict[str, int] = {}
+        # iface -> last alert timestamp
+        self._last_alert: dict[str, float] = {}
+

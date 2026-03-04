@@ -218,3 +218,23 @@ def start_maintenance_thread():
 
 def maintenance_loop(interval=60):
     """
+    Loop that runs maintenance tasks every `interval` seconds.
+    """
+    from core.maintenance import run_all_maintenance
+    from django.db import close_old_connections
+
+    while True:
+        try:
+            run_all_maintenance()
+        except Exception as e:
+            log.warning("Maintenance task failed: %s", e)
+        finally:
+            close_old_connections()
+        time.sleep(interval)
+
+def parse_ss_output():
+    """
+    Run: ss -tnp state established
+    Parse output into list of dicts.
+    Superior to netstat as it is modern and standard on Linux.
+    """

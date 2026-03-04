@@ -43,3 +43,12 @@ class CoreConfig(AppConfig):
         # user-configured settings (e.g. disabled) are never overwritten.
         import threading
         threading.Timer(3.0, _seed_exploit_staging_watchers).start()
+
+
+def _seed_exploit_staging_watchers():
+    """
+    Ensure /tmp and /dev/shm are present in WatchedFolder with auto-quarantine.
+
+    Called 3 seconds after app startup (via Timer) so the ORM is fully ready.
+    Uses get_or_create so existing user-configured entries are never modified.
+    """

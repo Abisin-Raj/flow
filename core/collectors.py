@@ -58,3 +58,23 @@ except Exception as e:
     start_rev_shell_detector = None
 
 try:
+    from core.dns_monitor import start_dns_monitor
+except Exception as e:
+    log.warning("Failed to import dns_monitor: %s", e)
+    start_dns_monitor = None
+
+try:
+    from core.persistence_watcher import start_persistence_watcher
+except Exception as e:
+    log.warning("Failed to import persistence_watcher: %s", e)
+    start_persistence_watcher = None
+
+try:
+    from core.tx_spike_detector import start_tx_spike_detector
+except Exception as e:
+    log.warning("Failed to import tx_spike_detector: %s", e)
+    start_tx_spike_detector = None
+
+
+def find_pid_for_connection(src_ip, src_port, dst_ip, dst_port):
+    """

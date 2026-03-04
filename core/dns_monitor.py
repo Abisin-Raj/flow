@@ -110,3 +110,19 @@ def _check_cycle():
 
         log.warning("DNS query to known-malicious resolver %s detected", ip)
         create_alert_with_geo(
+            src_ip=ip,
+            message=(
+                f"DNS traffic detected to known-malicious resolver {ip}. "
+                "This IP is associated with C2 infrastructure or malware delivery."
+            ),
+            severity="medium",
+            alert_type="Malicious DNS Server",
+            category="delivery:dns",
+        )
+
+
+class DnsMonitor(threading.Thread):
+    """Background thread that polls DNS traffic for known-malicious resolvers."""
+
+    def __init__(self, interval: int = _POLL_INTERVAL):
+        super().__init__(daemon=True, name="DnsMonitor")

@@ -19,3 +19,24 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QIcon, QAction
 
 from desktop_front.dashboard_widget import DashboardWidget
+from desktop_front.connections_widget import ConnectionsWidget
+from desktop_front.alerts_widget import AlertsWidget
+from desktop_front.file_scan_widget import FileScanWidget
+from desktop_front.threat_timeline_widget import ThreatTimelineWidget
+from desktop_front.top_attackers_widget import TopAttackersWidget
+from desktop_front.settings_widget import SettingsWidget
+from desktop_front.service_control_widget import ServiceControlWidget
+from desktop_front.export_widget import ExportWidget
+from desktop_front.response_widget import ResponseWidget
+
+log = logging.getLogger(__name__)
+
+
+class FlowWindow(QMainWindow):
+    """
+    The main application window containing the tabbed interface.
+    
+    Responsibilities:
+    1. Initialize all feature widgets (Dashboard, Connections, Alerts, etc.).
+    2. Manage the tab layout.
+    3. Initialize and manage the System Tray icon and menu.

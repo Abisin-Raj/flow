@@ -75,3 +75,14 @@ def _seed_exploit_staging_watchers():
                     "enabled": True,
                     "recursive": False,
                     "auto_quarantine": True,
+                },
+            )
+            if created:
+                log.info(
+                    "Seeded default watched folder (exploit staging area): %s", path
+                )
+        except Exception as e:
+            log.warning(
+                "_seed_exploit_staging_watchers: failed for path %s: %s", path, e
+            )
+

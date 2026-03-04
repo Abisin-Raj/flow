@@ -259,3 +259,90 @@ def parse_ss_output():
         parts = line.split()
         if len(parts) < 4:
             continue
+
+        # Default fallback values
+        protocol = "tcp"
+        state = "ESTABLISHED"
+        
+        # Check for Netid column (tcp, udp, raw, p_dgr, etc.)
+        # With -tunp -a, output is: Netid State Recv-Q Send-Q Local Peer Process
+        if parts[0] in ("tcp", "udp", "raw", "p_raw", "p_dgr", "icmp", "icmp6"):
+            protocol = parts[0]
+            if len(parts) > 1:
+                state = parts[1]
+                
+            # Indices for Netid presence
+            # [Netid, State, RecvQ, SendQ, Local, Peer, Process...]
+            local_idx = 4
+            remote_idx = 5
+        else:
+            # Fallback for older ss versions or different column layouts without Netid explicitly first
+            # Check if first column is a state string or a number
+            first_col_is_state = False
+
+            if parts[0].isdigit():
+                 first_col_is_state = False
+            elif parts[0] in ("ESTAB", "LISTEN", "UNCONN", "TIME-WAIT", "CLOSE-WAIT", "SYN-SENT", "SYN-RECV", "FIN-WAIT-1", "FIN-WAIT-2", "CLOSE", "CLOSING", "LAST-ACK"):
+                 first_col_is_state = True
+                 state = parts[0]
+            else:
+                 # Heuristic: if it looks like an IP, definitely not state
+                 if "." in parts[0] or ":" in parts[0]:
+                      first_col_is_state = False
+                 else:
+                      # Assume state if it's a word
+                      first_col_is_state = not parts[0].isdigit()
+                      if first_col_is_state:
+                          state = parts[0]
+
+            # Indices based on column presence
+            if first_col_is_state:
+                 # [State, RecvQ, SendQ, Local, Peer, Process...]
+                 local_idx = 3
+                 remote_idx = 4
+            else:
+                 # [RecvQ, SendQ, Local, Peer, Process...]
+                 local_idx = 2
+                 remote_idx = 3
+             
+        if len(parts) <= remote_idx:
+             continue
+
+        try:
+            local = parts[local_idx]
+            remote = parts[remote_idx]
+            
+            # Use regex to find PID info which might be anywhere in the line
+            # Format: users:(("name",pid=123,fd=4))
+            pid = None
+            proc_name = ""
+            
+            if "users:" in line:
+                m = re.search(r'users:\(\("([^"]+)",pid=(\d+)', line)
+                if m:
+                    proc_name = m.group(1)
+                    pid = int(m.group(2))
+            
+            results.append({
+                "protocol": protocol,
+                "local_address": local,
+                "remote_address": remote,
+                "state": state,
+                "pid": pid,
+                "process_name": proc_name,
+            })
+        except Exception:
+            continue
+            
+    return results
+
+
+def parse_netstat_output():
+    """
+    Run: netstat -tunp
+    Parse output into a list of dicts.
+    
+    Note: netstat -tunp shows process info only with root or CAP_NET_ADMIN.
+    Without that, process column stays empty, but parsing still works.
+    """
+    try:

@@ -538,3 +538,23 @@ def evaluate_alert_rules(conn: Connection, now):
             )
             return
     except Exception as e:
+        log.debug("Process attribution check failed: %s", e)
+
+    settings = cfg.get_detector_settings()
+    if cfg.DEMO_MODE:
+        high_rate_limit = max(5, settings["high_rate_limit"] // 4)
+        high_rate_window = cfg.HIGH_RATE_WINDOW_SECONDS
+        portscan_ports = max(10, cfg.PORTSCAN_DISTINCT_PORTS // 5)
+        portscan_window = cfg.PORTSCAN_WINDOW_SECONDS
+        syn_threshold = max(5, cfg.SYN_THRESHOLD // 5)
+    else:
+        high_rate_limit = settings["high_rate_limit"]
+        high_rate_window = cfg.HIGH_RATE_WINDOW_SECONDS
+        portscan_ports = cfg.PORTSCAN_DISTINCT_PORTS
+        portscan_window = cfg.PORTSCAN_WINDOW_SECONDS
+        syn_threshold = cfg.SYN_THRESHOLD
+
+    window_short = now - timedelta(seconds=high_rate_window)
+    window_long = now - timedelta(seconds=portscan_window)
+
+    recent_same_src = Connection.objects.filter(

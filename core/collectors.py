@@ -738,3 +738,23 @@ def start_collectors():
     if start_light_sniffer:
         try:
             start_light_sniffer()
+            log.info("Light sniffer started")
+        except Exception:
+            log.exception("Failed to start light sniffer")
+
+    # start rare port monitor
+    # rare_port_detector is integrated into save_connections loop
+
+    # start ARP MITM detector (unified)
+    # start_arp_mitm_collector is deprecated
+
+    if start_arp_mitm_detector:
+        try:
+            start_arp_mitm_detector()
+            log.info("ARP MITM detector started")
+        except Exception:
+            log.exception("Failed to start ARP MITM detector")
+
+    # start reverse shell detector
+    if start_rev_shell_detector:
+        try:

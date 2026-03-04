@@ -131,3 +131,22 @@ class PersistenceWatcher(threading.Thread):
         # Additions
         for path in set(current) - set(baseline):
             _emit_alert("ADDED", path)
+
+        # Deletions
+        for path in set(baseline) - set(current):
+            _emit_alert("DELETED", path)
+
+        # Modifications
+        for path in set(current) & set(baseline):
+            if current[path] != baseline[path]:
+                _emit_alert("MODIFIED", path)
+
+        # Update baseline to current state so we don't re-alert for same change
+        self._baseline = current
+
+    def stop(self):
+        self.running = False
+
+
+def start_persistence_watcher() -> PersistenceWatcher:
+    """Start the persistence watcher background thread and return it."""

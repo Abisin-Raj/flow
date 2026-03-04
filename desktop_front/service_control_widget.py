@@ -89,3 +89,16 @@ class ServiceControlWidget(QWidget):
         note = QLabel(
             "Note: If you disable a service here, restart the app for it to take effect."
         )
+        note.setWordWrap(True)
+        note.setStyleSheet("color: #bbbbbb; font-size: 11px;")
+        main.addWidget(note)
+
+    def save_flags(self):
+        settings_api.set_service_flag("collectors", self.chk_collectors.isChecked())
+        settings_api.set_service_flag("folder_watcher", self.chk_folder.isChecked())
+        settings_api.set_service_flag("sniffer", self.chk_sniffer.isChecked())
+        settings_api.set_service_flag("light_sniffer", self.chk_light.isChecked())
+        settings_api.set_service_flag("alert_watcher", self.chk_alert_watch.isChecked())
+
+        QMessageBox.information(
+            self,

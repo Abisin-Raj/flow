@@ -338,3 +338,23 @@ def parse_ss_output():
 
 
 def parse_netstat_output():
+    """
+    Run: netstat -tunp
+    Parse output into a list of dicts.
+    
+    Note: netstat -tunp shows process info only with root or CAP_NET_ADMIN.
+    Without that, process column stays empty, but parsing still works.
+    """
+    try:
+        output = subprocess.check_output(
+            ["netstat", "-tunp"], stderr=subprocess.DEVNULL
+        ).decode()
+    except Exception as e:
+        log.warning("parse_netstat_output failed: %s", e)
+        return []
+
+    lines = output.strip().splitlines()
+    results = []
+
+    for line in lines:
+        if not (line.startswith("tcp") or line.startswith("udp")):

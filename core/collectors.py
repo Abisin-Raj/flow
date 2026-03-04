@@ -198,3 +198,23 @@ def create_attributed_alert(src_ip, src_port, dst_ip, dst_port, message, severit
             proc_name=proc_name,
             **kwargs,
         )
+    except Exception:
+        log.exception("Failed to create attributed alert for %s:%s -> %s:%s", src_ip, src_port, dst_ip, dst_port)
+        return None
+
+
+
+
+def start_connection_collector():
+    t = threading.Thread(target=connection_collector_loop, daemon=True)
+    t.start()
+
+
+def start_maintenance_thread():
+    """Starts a background thread for periodic maintenance tasks."""
+    t = threading.Thread(target=maintenance_loop, daemon=True)
+    t.start()
+
+
+def maintenance_loop(interval=60):
+    """

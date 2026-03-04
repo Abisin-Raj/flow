@@ -82,3 +82,24 @@ class FlowWindow(QMainWindow):
 
         self.export_tab = ExportWidget(self)
         self.tabs.addTab(self.export_tab, "Export")
+
+        self.service_control_tab = ServiceControlWidget(self)
+        self.tabs.addTab(self.service_control_tab, "Service Control")
+
+        # system tray
+        self.tray_icon = None
+        self._create_system_tray()
+
+    def _on_tab_changed(self, index):
+        """Log tab changes for debugging usage patterns."""
+        tab_name = self.tabs.tabText(index)
+        log.info(f"Tab changed to index {index}: {tab_name}")
+
+    def _create_system_tray(self):
+        """
+        Setup the system tray icon with a context menu (Open, Hide, Quit).
+        Attempts to locate the icon in various standard locations.
+        """
+        # Try system-wide icon first (when installed)
+        icon_path = Path("/usr/share/pixmaps/flow.png")
+        if not icon_path.exists():

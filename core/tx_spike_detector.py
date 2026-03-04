@@ -49,3 +49,20 @@ def _read_tx_bytes(iface: str) -> int | None:
     try:
         with open(path, "r") as fh:
             return int(fh.read().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def _active_interfaces() -> list[str]:
+    """Return non-loopback interfaces that have a tx_bytes counter."""
+    ifaces = []
+    try:
+        for iface in os.listdir(_SYS_NET):
+            if iface == "lo":
+                continue
+            if os.path.exists(os.path.join(_SYS_NET, iface, "statistics", "tx_bytes")):
+                ifaces.append(iface)
+    except OSError as e:
+        log.debug("Cannot list %s: %s", _SYS_NET, e)
+    return ifaces
+

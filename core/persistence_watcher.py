@@ -112,3 +112,22 @@ class PersistenceWatcher(threading.Thread):
             except Exception:
                 log.exception("PersistenceWatcher: unexpected error in poll")
             finally:
+                close_old_connections()
+            time.sleep(self.interval)
+
+    def _poll(self):
+        current = _snapshot(self._watch_paths)
+
+        if self._baseline is None:
+            # First run: establish baseline silently
+            self._baseline = current
+            log.info(
+                "PersistenceWatcher baseline captured (%d files)", len(current)
+            )
+            return
+
+        baseline = self._baseline
+
+        # Additions
+        for path in set(current) - set(baseline):
+            _emit_alert("ADDED", path)

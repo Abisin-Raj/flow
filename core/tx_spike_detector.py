@@ -32,3 +32,20 @@ _SYS_NET = "/sys/class/net"
 
 
 def _get_threshold_mb() -> float:
+    """Read configurable threshold from settings_api, with fallback."""
+    try:
+        from core import settings_api
+        val = settings_api.get_int("tx_spike_threshold_mb")
+        if val and val > 0:
+            return float(val)
+    except Exception:
+        pass
+    return float(_DEFAULT_THRESHOLD_MB)
+
+
+def _read_tx_bytes(iface: str) -> int | None:
+    """Read current TX byte counter for an interface."""
+    path = os.path.join(_SYS_NET, iface, "statistics", "tx_bytes")
+    try:
+        with open(path, "r") as fh:
+            return int(fh.read().strip())

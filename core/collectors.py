@@ -318,3 +318,23 @@ def parse_ss_output():
             proc_name = ""
             
             if "users:" in line:
+                m = re.search(r'users:\(\("([^"]+)",pid=(\d+)', line)
+                if m:
+                    proc_name = m.group(1)
+                    pid = int(m.group(2))
+            
+            results.append({
+                "protocol": protocol,
+                "local_address": local,
+                "remote_address": remote,
+                "state": state,
+                "pid": pid,
+                "process_name": proc_name,
+            })
+        except Exception:
+            continue
+            
+    return results
+
+
+def parse_netstat_output():

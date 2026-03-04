@@ -55,3 +55,22 @@ def _hash_file(path: Path) -> str:
 def _snapshot(paths: list[Path]) -> dict[str, str]:
     """
     Walk each path (file or directory) and return a mapping of
+    absolute-path-string → sha256 for every file found.
+    """
+    state: dict[str, str] = {}
+    for root in paths:
+        if root.is_file():
+            digest = _hash_file(root)
+            if digest:
+                state[str(root)] = digest
+        elif root.is_dir():
+            try:
+                for entry in os.scandir(root):
+                    if entry.is_file(follow_symlinks=False):
+                        digest = _hash_file(Path(entry.path))
+                        if digest:
+                            state[entry.path] = digest
+            except PermissionError:
+                log.debug("No read permission for %s", root)
+    return state
+

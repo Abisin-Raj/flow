@@ -238,3 +238,23 @@ def parse_ss_output():
     Parse output into list of dicts.
     Superior to netstat as it is modern and standard on Linux.
     """
+    import re
+    try:
+        # -t: tcp, -u: udp, -w: raw (icmp), -x: unix, -S: sctp, -n: numeric, -p: processes, -a: all
+        cmd = ["ss", "-tunpwS", "-a"]
+        output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)
+    except Exception as e:
+        log.warning("parse_ss_output failed: %s", e)
+        return []
+
+    lines = output.strip().splitlines()
+    results = []
+
+    # Skip header if present
+    start_idx = 0
+    if lines and "Recv-Q" in lines[0]:
+        start_idx = 1
+
+    for line in lines[start_idx:]:
+        parts = line.split()
+        if len(parts) < 4:

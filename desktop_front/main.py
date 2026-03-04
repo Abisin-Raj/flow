@@ -145,3 +145,24 @@ class FlowWindow(QMainWindow):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self.show_from_tray()
         if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+            self.show_from_tray()
+
+    def show_from_tray(self):
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def hide_to_tray(self):
+        self.hide()
+
+    def _quit_app(self):
+        if self.tray_icon:
+            self.tray_icon.hide()
+        QApplication.instance().quit()
+
+    def closeEvent(self, event):
+        event.ignore()
+        self.hide_to_tray()
+
+
+def main():

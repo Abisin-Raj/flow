@@ -134,3 +134,20 @@ class TxSpikeDetector(threading.Thread):
             msg = (
                 f"Possible data exfiltration on interface '{iface}': "
                 f"{delta_mb:.1f} MB uploaded in {self.interval}s "
+                f"(threshold: {threshold_mb:.0f} MB). "
+                "This may indicate bulk data transfer to an attacker."
+            )
+            log.warning(msg)
+            create_alert_with_geo(
+                src_ip=None,
+                message=msg,
+                severity="high",
+                alert_type="TX Spike / Data Exfiltration",
+                category="exfiltration:tx_spike",
+            )
+
+    def stop(self):
+        self.running = False
+
+
+def start_tx_spike_detector() -> TxSpikeDetector:

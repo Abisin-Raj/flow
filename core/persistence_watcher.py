@@ -49,3 +49,20 @@ def _hash_file(path: Path) -> str:
                 h.update(chunk)
         return h.hexdigest()
     except OSError:
+        return ""
+
+
+def _snapshot(paths: list[Path]) -> dict[str, str]:
+    """
+    Walk each path (file or directory) and return a mapping of
+    absolute-path-string → sha256 for every file found.
+    """
+    state: dict[str, str] = {}
+    for root in paths:
+        if root.is_file():
+            digest = _hash_file(root)
+            if digest:
+                state[str(root)] = digest
+        elif root.is_dir():
+            try:
+                for entry in os.scandir(root):

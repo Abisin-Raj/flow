@@ -607,3 +607,90 @@ def evaluate_alert_rules(conn: Connection, now):
             create_alert_for_connection(
                 src_ip=conn.src_ip,
                 message=f"Repeated SYN connections from {conn.src_ip} ({recent_syn} recent SYN states)",
+                alert_type="SYN Flood",
+                severity="medium",
+                connection=conn,
+                pid=conn.pid,
+                process_name=conn.process_name,
+            )
+            return
+
+    src_ip = conn.src_ip or ""
+    is_localhost = src_ip in ("127.0.0.1", "localhost", "::1") or src_ip.startswith("127.0.")
+
+    if conn.dst_port in cfg.SUSPICIOUS_PORTS and not is_localhost:
+        create_alert_for_connection(
+            src_ip=conn.src_ip,
+            message=f"Connection to sensitive port {conn.dst_port} from {conn.src_ip}",
+            alert_type="Sensitive Port",
+            severity="low",
+            connection=conn,
+            pid=conn.pid,
+            process_name=conn.process_name,
+        )
+
+    # 5. Reverse shell suspicious outbound connection
+    try:
+        reverse_ports = cfg.get_port_list("reverse_shell_ports", "4444,5555,1337")
+    except Exception:
+        reverse_ports = [4444, 5555, 1337]
+
+    if (
+        conn.dst_port in reverse_ports
+        and not conn.src_ip.startswith("127.")
+        and not cfg.is_ip_ignored(conn.src_ip)
+    ):
+        msg = (
+            f"Possible reverse shell connection from {conn.src_ip} "
+            f"to {conn.dst_ip}:{conn.dst_port}"
+        )
+        create_alert_for_connection(
+            src_ip=conn.src_ip,
+            dst_ip=conn.dst_ip,
+            dst_port=conn.dst_port,
+            message=msg,
+            alert_type="Reverse Shell",
+            severity="high",
+            pid=conn.pid,
+            process_name=conn.process_name,
+        )
+
+
+def connection_collector_loop(interval=3):
+    """
+    Main background loop for the connection collector.
+    
+    Periodically:
+    1.  Collects active connections using the best available tool (`ss` > `/proc` > `netstat`).
+    2.  Parses the output.
+    3.  Saves to DB and analyzes for threats.
+    4.  Sleeps for `interval`.
+    
+    Handles DB errors gracefully with exponential backoff to prevent log spam/crashing.
+    """
+    from django.db import connection
+    from django.db.utils import DatabaseError
+
+    backoff = 1
+    max_backoff = 60
+    consecutive_db_errors = 0
+    DB_ERROR_THRESHOLD = 5
+
+    while True:
+        try:
+            connection.close()  # Ensure clean state start
+            
+            # Try ss first (best for PIDs and modern Linux)
+            items = parse_ss_output()
+            
+            # Fallback to /proc if ss failed or returned nothing
+            if not items:
+                # Try /proc filesystem (sees all connections including sandboxed apps but lacking PIDs usually)
+                items = parse_proc_net()
+            
+            # If /proc also returns no or very few connections, fall back to netstat
+            if (not items or len(items) < 3) and not items:
+                # log.info("Few/no connections, trying netstat fallback")
+                items = parse_netstat_output()
+            
+            if items:

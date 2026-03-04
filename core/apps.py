@@ -52,3 +52,12 @@ def _seed_exploit_staging_watchers():
     Called 3 seconds after app startup (via Timer) so the ORM is fully ready.
     Uses get_or_create so existing user-configured entries are never modified.
     """
+    import logging
+    import os
+
+    log = logging.getLogger("core.apps")
+
+    STAGING_PATHS = ["/tmp", "/dev/shm"]
+
+    try:
+        from core.models import WatchedFolder

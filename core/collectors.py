@@ -478,3 +478,23 @@ def save_connections(data_list):
             protocol=entry["protocol"],
             status=entry["state"],
             pid=pid,
+            ppid=ppid,
+            process_name=process_name,
+            src_country=src_geo.get("country"),
+            src_city=src_geo.get("city"),
+            dst_country=dst_geo.get("country"),
+            dst_city=dst_geo.get("city"),
+        )
+
+        # Check for rare outbound ports
+        if rare_port_handle:
+            try:
+                rare_port_handle(
+                    src_ip=conn.src_ip,
+                    dst_ip=conn.dst_ip,
+                    dst_port=conn.dst_port,
+                    protocol=conn.protocol,
+                )
+            except Exception:
+                log.exception(
+                    "rare-port detector failed for connection id=%s",

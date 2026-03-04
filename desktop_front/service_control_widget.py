@@ -24,3 +24,16 @@ import django  # noqa: E402
 
 django.setup()
 
+from core import settings_api  # noqa: E402
+
+
+class ServiceControlWidget(QWidget):
+    """
+    Panel to enable or disable background services.
+    Changes are stored in AppSetting and take effect next time the app starts.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        main = QVBoxLayout(self)

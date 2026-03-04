@@ -458,3 +458,23 @@ def save_connections(data_list):
             info = get_process_info(pid)
             if info:
                 ppid = info.get("ppid") or None
+                if not process_name:
+                    process_name = info.get("name") or ""
+
+        # Geolocation lookup
+        try:
+            from core.geolocation import get_geo
+            src_geo = get_geo(src_ip) or {}
+            dst_geo = get_geo(dst_ip) or {}
+        except ImportError:
+            src_geo = {}
+            dst_geo = {}
+
+        conn = Connection.objects.create(
+            src_ip=src_ip,
+            src_port=src_port,
+            dst_ip=dst_ip,
+            dst_port=dst_port,
+            protocol=entry["protocol"],
+            status=entry["state"],
+            pid=pid,

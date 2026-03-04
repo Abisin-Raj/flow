@@ -758,3 +758,23 @@ def start_collectors():
     # start reverse shell detector
     if start_rev_shell_detector:
         try:
+            start_rev_shell_detector()
+            log.info("Reverse shell detector started")
+        except Exception:
+            log.exception("Failed to start reverse shell detector")
+
+    # Stage 3 – Delivery: DNS monitor (malicious resolver detection)
+    if start_dns_monitor:
+        try:
+            start_dns_monitor()
+            log.info("DNS monitor started")
+        except Exception:
+            log.exception("Failed to start dns_monitor")
+
+    # Stage 5 – Installation: persistence watcher (cron/systemd)
+    if start_persistence_watcher:
+        try:
+            start_persistence_watcher()
+            log.info("Persistence watcher started")
+        except Exception:
+            log.exception("Failed to start persistence_watcher")

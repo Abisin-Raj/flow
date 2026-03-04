@@ -151,3 +151,7 @@ class TxSpikeDetector(threading.Thread):
 
 
 def start_tx_spike_detector() -> TxSpikeDetector:
+    """Start the TX spike detector background thread and return it."""
+    detector = TxSpikeDetector()
+    detector.start()
+    return detector

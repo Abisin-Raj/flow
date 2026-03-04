@@ -88,3 +88,21 @@ def _scan_proc_udp() -> list[str]:
                     ip = _hex_to_ip(rem_ip_hex)
                     if ip:
                         destinations.append(ip)
+    except OSError as e:
+        log.debug("Cannot read /proc/net/udp: %s", e)
+    return destinations
+
+
+def _check_cycle():
+    """Run one scan cycle: read proc, check against block-list, alert."""
+    now = time.time()
+    destinations = _scan_proc_udp()
+
+    for ip in set(destinations):
+        if ip not in _BLOCKED_DNS_IPS:
+            continue
+
+        with _alerted_lock:
+            last = _alerted.get(ip, 0.0)
+            if now - last < _COOLDOWN:
+                continue

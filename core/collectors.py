@@ -718,3 +718,23 @@ def connection_collector_loop(interval=3):
             time.sleep(interval)
         finally:
             close_old_connections()
+
+
+def start_collectors():
+    log.info("Starting collectors")
+
+    try:
+        start_connection_collector()
+    except Exception:
+        log.exception("Failed to start connection collector")
+
+    # Start periodic maintenance thread (cleanup expired blocks, etc.)
+    try:
+        start_maintenance_thread()
+    except Exception:
+        log.exception("Failed to start maintenance thread")
+
+    # start light sniffer (reads /proc/net/tcp) for extra port scan hints
+    if start_light_sniffer:
+        try:
+            start_light_sniffer()

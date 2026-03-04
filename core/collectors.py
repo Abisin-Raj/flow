@@ -138,3 +138,23 @@ def find_pid_for_connection(src_ip, src_port, dst_ip, dst_port):
     return None
 
 
+def get_proc_name_from_pid(pid):
+    """
+    Get process name from PID using /proc/{pid}/exe or /proc/{pid}/comm.
+    """
+    import os
+    if not pid:
+        return None
+    try:
+        exe = os.readlink(f"/proc/{pid}/exe")
+        return os.path.basename(exe)
+    except Exception:
+        try:
+            with open(f"/proc/{pid}/comm", "r") as f:
+                return f.read().strip()
+        except Exception:
+            return None
+
+
+def create_attributed_alert(src_ip, src_port, dst_ip, dst_port, message, severity="medium", **kwargs):
+    """

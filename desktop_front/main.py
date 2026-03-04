@@ -166,3 +166,24 @@ class FlowWindow(QMainWindow):
 
 
 def main():
+    """
+    Standard PyQt6 application entry point.
+    Initializes the app, window, and notification manager.
+    """
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    app = QApplication(sys.argv)
+
+    win = FlowWindow()
+    win.show()
+
+    # Initialize Qt-native notification manager
+    try:
+        from desktop_front.notification_manager import NotificationManager
+        win.notification_manager = NotificationManager(win.tray_icon)
+    except Exception as e:
+        log.warning(f"Could not initialize notification manager: {e}")
+        win.notification_manager = None
+
+    sys.exit(app.exec())
+
+

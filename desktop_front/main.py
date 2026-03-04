@@ -124,3 +124,24 @@ class FlowWindow(QMainWindow):
         restore_action = QAction("Show", self)
         restore_action.triggered.connect(self.show_from_tray)
         menu.addAction(restore_action)
+
+        hide_action = QAction("Hide to tray", self)
+        hide_action.triggered.connect(self.hide_to_tray)
+        menu.addAction(hide_action)
+
+        menu.addSeparator()
+
+        quit_action = QAction("Quit", self)
+        quit_action.triggered.connect(self._quit_app)
+        menu.addAction(quit_action)
+
+        tray.setContextMenu(menu)
+        tray.activated.connect(self._on_tray_activated)
+        tray.show()
+
+        self.tray_icon = tray
+
+    def _on_tray_activated(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            self.show_from_tray()
+        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:

@@ -32,3 +32,20 @@ def _default_watch_paths() -> list[Path]:
         Path("/etc/crontab"),
         Path("/etc/cron.d"),
         Path("/var/spool/cron/crontabs"),
+    ]
+    # User systemd units (expand ~)
+    user_systemd = Path.home() / ".config" / "systemd" / "user"
+    if user_systemd.exists():
+        paths.append(user_systemd)
+    return paths
+
+
+def _hash_file(path: Path) -> str:
+    """Return SHA-256 hex digest of a file, or empty string on error."""
+    try:
+        h = hashlib.sha256()
+        with open(path, "rb") as fh:
+            for chunk in iter(lambda: fh.read(65536), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except OSError:

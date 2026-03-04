@@ -17,3 +17,22 @@ The threshold can be overridden via the AppSetting key:
 import logging
 import os
 import threading
+import time
+
+from django.db import close_old_connections
+
+from core.alert_engine import create_alert_with_geo
+
+log = logging.getLogger("core.tx_spike_detector")
+
+_POLL_INTERVAL = 60          # seconds between samples
+_DEFAULT_THRESHOLD_MB = 50   # MB uploaded in one interval to trigger alert
+_COOLDOWN = 300              # seconds before re-alerting for the same interface
+_SYS_NET = "/sys/class/net"
+
+
+def _get_threshold_mb() -> float:
+    """Read configurable threshold from settings_api, with fallback."""
+    try:
+        from core import settings_api
+        val = settings_api.get_int("tx_spike_threshold_mb")

@@ -498,3 +498,23 @@ def save_connections(data_list):
             except Exception:
                 log.exception(
                     "rare-port detector failed for connection id=%s",
+                    getattr(conn, "id", None),
+                )
+
+        try:
+            evaluate_alert_rules(conn, now)
+        except Exception:
+            continue
+
+
+def evaluate_alert_rules(conn: Connection, now):
+    """
+    Check a new connection against various detection rules.
+    
+    Rules checked:
+    1.  High Connection Rate (DOS/spam).
+    2.  Port Scan (many distinct destination ports).
+    3.  SYN Flood (many SYN_SENT states).
+    4.  Sensitive Port Access (connecting to known internal services).
+    5.  Reverse Shell patterns (connecting to known C2 ports).
+

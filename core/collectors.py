@@ -781,3 +781,8 @@ def start_collectors():
 
     # Stage 7 – Objectives: TX spike / data exfiltration detector
     if start_tx_spike_detector:
+        try:
+            start_tx_spike_detector()
+            log.info("TX spike detector started")
+        except Exception:
+            log.exception("Failed to start tx_spike_detector")

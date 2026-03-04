@@ -150,3 +150,6 @@ class PersistenceWatcher(threading.Thread):
 
 def start_persistence_watcher() -> PersistenceWatcher:
     """Start the persistence watcher background thread and return it."""
+    watcher = PersistenceWatcher()
+    watcher.start()
+    return watcher

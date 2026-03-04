@@ -78,3 +78,23 @@ except Exception as e:
 
 def find_pid_for_connection(src_ip, src_port, dst_ip, dst_port):
     """
+    Try to map a 4-tuple to a PID using ss first, then /proc/net/tcp fallback.
+    Returns PID or None.
+    """
+    import re
+    import os
+    
+    # Try ss first (faster)
+    try:
+        cmd = ["ss", "-tnp", "state", "established"]
+        out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)
+        for line in out.splitlines():
+            if f"{src_ip}:{src_port}" in line and f"{dst_ip}:{dst_port}" in line:
+                m = re.search(r"pid=(\d+)", line)
+                if m:
+                    return int(m.group(1))
+    except Exception:
+        pass
+
+    # Fallback: scan /proc/net/tcp for local/remote hex tuples then map inode -> pid
+    try:

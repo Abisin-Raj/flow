@@ -102,3 +102,7 @@ class ServiceControlWidget(QWidget):
 
         QMessageBox.information(
             self,
+            "Saved",
+            "Configuration saved.\n"
+            "Restart the application to apply service changes.",
+        )

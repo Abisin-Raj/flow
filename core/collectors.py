@@ -418,3 +418,23 @@ def split_address(addr: str):
     except ValueError:
         port_int = 0
 
+    return ip, port_int
+
+
+@transaction.atomic
+def save_connections(data_list):
+    """
+    Store parsed Connection data into the database and trigger analysis.
+
+    For each unique connection entry:
+    1.  Parse and validate IP/Port.
+    2.  Enrich with Process Info (PID, PPID, PName).
+    3.  Create a `Connection` record.
+    4.  Pass to `rare_port_detector`.
+    5.  Pass to `evaluate_alert_rules`.
+    
+    This runs inside a transaction to ensure data integrity.
+
+    Args:
+        data_list (list): List of connection dicts from parsers.
+    """

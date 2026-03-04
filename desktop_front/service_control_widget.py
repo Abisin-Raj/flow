@@ -82,3 +82,15 @@ class ServiceControlWidget(QWidget):
         btn_save = make_small_button("Save configuration")
         btn_save.clicked.connect(self.save_flags)
         button_row.addWidget(btn_save)
+        button_row.addStretch()
+
+        main.addLayout(button_row)
+
+        note = QLabel(
+            "Note: If you disable a service here, restart the app for it to take effect."
+        )
+        note.setWordWrap(True)
+        note.setStyleSheet("color: #bbbbbb; font-size: 11px;")
+        main.addWidget(note)
+
+    def save_flags(self):

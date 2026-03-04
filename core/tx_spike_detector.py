@@ -83,3 +83,20 @@ class TxSpikeDetector(threading.Thread):
         # iface -> last alert timestamp
         self._last_alert: dict[str, float] = {}
 
+    def run(self):
+        log.info("TxSpikeDetector started (interval=%ds)", self.interval)
+        # Warm up: record initial byte counts without alerting
+        for iface in _active_interfaces():
+            val = _read_tx_bytes(iface)
+            if val is not None:
+                self._prev[iface] = val
+
+        time.sleep(self.interval)
+
+        while self.running:
+            try:
+                self._poll()
+            except Exception:
+                log.exception("TxSpikeDetector: unexpected error in poll")
+            finally:
+                close_old_connections()

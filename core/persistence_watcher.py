@@ -74,3 +74,22 @@ def _snapshot(paths: list[Path]) -> dict[str, str]:
                 log.debug("No read permission for %s", root)
     return state
 
+
+def _emit_alert(event: str, path: str):
+    """Raise a persistence alert via the alert engine."""
+    msg = f"Persistence change detected [{event}]: {path}"
+    log.warning(msg)
+    create_alert_with_geo(
+        src_ip=None,
+        message=msg,
+        severity="high",
+        alert_type="Persistence Change",
+        category="installation:persistence",
+    )
+
+
+class PersistenceWatcher(threading.Thread):
+    """
+    Background thread that baselines and monitors cron/systemd persistence
+    paths for attacker-installed backdoors.
+    """

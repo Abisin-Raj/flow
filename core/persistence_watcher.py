@@ -83,3 +83,20 @@ def _emit_alert(event: str, path: str):
         src_ip=None,
         message=msg,
         severity="high",
+        alert_type="Persistence Change",
+        category="installation:persistence",
+    )
+
+
+class PersistenceWatcher(threading.Thread):
+    """
+    Background thread that baselines and monitors cron/systemd persistence
+    paths for attacker-installed backdoors.
+    """
+
+    def __init__(self, interval: int = _POLL_INTERVAL):
+        super().__init__(daemon=True, name="PersistenceWatcher")
+        self.interval = interval
+        self.running = True
+        self._baseline: dict[str, str] | None = None
+        self._watch_paths = _default_watch_paths()

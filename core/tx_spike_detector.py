@@ -55,3 +55,22 @@ def _read_tx_bytes(iface: str) -> int | None:
 
 def _active_interfaces() -> list[str]:
     """Return non-loopback interfaces that have a tx_bytes counter."""
+    ifaces = []
+    try:
+        for iface in os.listdir(_SYS_NET):
+            if iface == "lo":
+                continue
+            if os.path.exists(os.path.join(_SYS_NET, iface, "statistics", "tx_bytes")):
+                ifaces.append(iface)
+    except OSError as e:
+        log.debug("Cannot list %s: %s", _SYS_NET, e)
+    return ifaces
+
+
+class TxSpikeDetector(threading.Thread):
+    """
+    Background thread that monitors per-interface TX byte counters and
+    raises an alert when an upload spike consistent with data exfiltration
+    is detected.
+    """
+

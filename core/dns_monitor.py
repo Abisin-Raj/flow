@@ -52,3 +52,21 @@ _BLOCKED_DNS_IPS: set[str] = {
 # Cooldown: avoid re-alerting for the same destination within this window (s)
 _COOLDOWN = 300
 _alerted: dict[str, float] = {}
+_alerted_lock = threading.Lock()
+
+
+def _hex_to_ip(hex_ip: str) -> str:
+    """Convert little-endian hex IP from /proc/net/udp to dotted notation."""
+    try:
+        packed = bytes.fromhex(hex_ip)
+        return ".".join(str(b) for b in reversed(packed))
+    except Exception:
+        return ""
+
+
+def _scan_proc_udp() -> list[str]:
+    """
+    Read /proc/net/udp and return list of destination IPs for port-53 traffic.
+    Each row: sl local_address rem_address ...
+    """
+    destinations: list[str] = []

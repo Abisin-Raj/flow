@@ -62,3 +62,19 @@ def _hex_to_ip(hex_ip: str) -> str:
         return ".".join(str(b) for b in reversed(packed))
     except Exception:
         return ""
+
+
+def _scan_proc_udp() -> list[str]:
+    """
+    Read /proc/net/udp and return list of destination IPs for port-53 traffic.
+    Each row: sl local_address rem_address ...
+    """
+    destinations: list[str] = []
+    try:
+        with open("/proc/net/udp", "r") as fh:
+            for line in fh.readlines()[1:]:
+                parts = line.split()
+                if len(parts) < 3:
+                    continue
+                rem = parts[2]  # remote address hex:hexport
+                if ":" not in rem:

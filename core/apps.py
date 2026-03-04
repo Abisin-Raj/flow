@@ -64,3 +64,14 @@ def _seed_exploit_staging_watchers():
     except Exception as e:
         log.warning("_seed_exploit_staging_watchers: cannot import WatchedFolder: %s", e)
         return
+
+    for path in STAGING_PATHS:
+        if not os.path.isdir(path):
+            continue
+        try:
+            obj, created = WatchedFolder.objects.get_or_create(
+                path=path,
+                defaults={
+                    "enabled": True,
+                    "recursive": False,
+                    "auto_quarantine": True,

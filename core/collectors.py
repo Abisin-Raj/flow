@@ -358,3 +358,23 @@ def parse_netstat_output():
 
     for line in lines:
         if not (line.startswith("tcp") or line.startswith("udp")):
+            continue
+
+        parts = line.split()
+        if len(parts) < 6:
+            continue
+
+        proto = parts[0]
+        local = parts[3]
+        remote = parts[4]
+
+        if proto.startswith("tcp"):
+            state = parts[5]
+        else:
+            state = "LISTEN"
+
+        # PID/Program name is usually the last column, e.g. "1234/python"
+        # It might be missing if not root
+        pid_prog = parts[6] if len(parts) > 6 else "-"
+        pid = None
+        proc_name = ""

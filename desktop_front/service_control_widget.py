@@ -70,3 +70,15 @@ class ServiceControlWidget(QWidget):
 
         for w in [
             self.chk_collectors,
+            self.chk_folder,
+            self.chk_sniffer,
+            self.chk_light,
+            self.chk_alert_watch,
+        ]:
+            main.addWidget(w)
+
+        button_row = QHBoxLayout()
+        button_row.addStretch()
+        btn_save = make_small_button("Save configuration")
+        btn_save.clicked.connect(self.save_flags)
+        button_row.addWidget(btn_save)

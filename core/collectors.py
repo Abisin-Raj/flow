@@ -638,3 +638,23 @@ def evaluate_alert_rules(conn: Connection, now):
     if (
         conn.dst_port in reverse_ports
         and not conn.src_ip.startswith("127.")
+        and not cfg.is_ip_ignored(conn.src_ip)
+    ):
+        msg = (
+            f"Possible reverse shell connection from {conn.src_ip} "
+            f"to {conn.dst_ip}:{conn.dst_port}"
+        )
+        create_alert_for_connection(
+            src_ip=conn.src_ip,
+            dst_ip=conn.dst_ip,
+            dst_port=conn.dst_port,
+            message=msg,
+            alert_type="Reverse Shell",
+            severity="high",
+            pid=conn.pid,
+            process_name=conn.process_name,
+        )
+
+
+def connection_collector_loop(interval=3):
+    """

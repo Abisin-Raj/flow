@@ -50,3 +50,16 @@ class ServiceControlWidget(QWidget):
 
         main.addWidget(title)
         main.addWidget(info)
+
+        flags = settings_api.get_service_flags()
+
+        self.chk_collectors = QCheckBox("Enable collectors (connection analyzers)")
+        self.chk_collectors.setChecked(flags.get("collectors", True))
+
+        self.chk_folder = QCheckBox("Enable folder watcher (file quarantine)")
+        self.chk_folder.setChecked(flags.get("folder_watcher", True))
+
+        self.chk_sniffer = QCheckBox("Enable packet sniffer (raw sockets)")
+        self.chk_sniffer.setChecked(flags.get("sniffer", True))
+
+        self.chk_light = QCheckBox("Enable light sniffer (/proc/net/tcp)")

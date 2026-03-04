@@ -126,3 +126,19 @@ class DnsMonitor(threading.Thread):
 
     def __init__(self, interval: int = _POLL_INTERVAL):
         super().__init__(daemon=True, name="DnsMonitor")
+        self.interval = interval
+        self.running = True
+
+    def run(self):
+        log.info("DnsMonitor started (interval=%ds)", self.interval)
+        while self.running:
+            try:
+                _check_cycle()
+            except Exception:
+                log.exception("DnsMonitor: unexpected error in check cycle")
+            finally:
+                close_old_connections()
+            time.sleep(self.interval)
+
+    def stop(self):
+        self.running = False

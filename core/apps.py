@@ -61,3 +61,12 @@ def _seed_exploit_staging_watchers():
 
     try:
         from core.models import WatchedFolder
+    except Exception as e:
+        log.warning("_seed_exploit_staging_watchers: cannot import WatchedFolder: %s", e)
+        return
+
+    for path in STAGING_PATHS:
+        if not os.path.isdir(path):
+            continue
+        try:
+            obj, created = WatchedFolder.objects.get_or_create(

@@ -117,3 +117,20 @@ class PersistenceWatcher(threading.Thread):
 
     def _poll(self):
         current = _snapshot(self._watch_paths)
+
+        if self._baseline is None:
+            # First run: establish baseline silently
+            self._baseline = current
+            log.info(
+                "PersistenceWatcher baseline captured (%d files)", len(current)
+            )
+            return
+
+        baseline = self._baseline
+
+        # Additions
+        for path in set(current) - set(baseline):
+            _emit_alert("ADDED", path)
+
+        # Deletions
+        for path in set(baseline) - set(current):

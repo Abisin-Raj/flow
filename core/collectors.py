@@ -258,3 +258,23 @@ def parse_ss_output():
     for line in lines[start_idx:]:
         parts = line.split()
         if len(parts) < 4:
+            continue
+
+        # Default fallback values
+        protocol = "tcp"
+        state = "ESTABLISHED"
+        
+        # Check for Netid column (tcp, udp, raw, p_dgr, etc.)
+        # With -tunp -a, output is: Netid State Recv-Q Send-Q Local Peer Process
+        if parts[0] in ("tcp", "udp", "raw", "p_raw", "p_dgr", "icmp", "icmp6"):
+            protocol = parts[0]
+            if len(parts) > 1:
+                state = parts[1]
+                
+            # Indices for Netid presence
+            # [Netid, State, RecvQ, SendQ, Local, Peer, Process...]
+            local_idx = 4
+            remote_idx = 5
+        else:
+            # Fallback for older ss versions or different column layouts without Netid explicitly first
+            # Check if first column is a state string or a number

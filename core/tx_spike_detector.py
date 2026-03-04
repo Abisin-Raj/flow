@@ -74,3 +74,22 @@ class TxSpikeDetector(threading.Thread):
     is detected.
     """
 
+    def __init__(self, interval: int = _POLL_INTERVAL):
+        super().__init__(daemon=True, name="TxSpikeDetector")
+        self.interval = interval
+        self.running = True
+        # iface -> last tx_bytes value
+        self._prev: dict[str, int] = {}
+        # iface -> last alert timestamp
+        self._last_alert: dict[str, float] = {}
+
+    def run(self):
+        log.info("TxSpikeDetector started (interval=%ds)", self.interval)
+        # Warm up: record initial byte counts without alerting
+        for iface in _active_interfaces():
+            val = _read_tx_bytes(iface)
+            if val is not None:
+                self._prev[iface] = val
+
+        time.sleep(self.interval)
+

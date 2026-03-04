@@ -378,3 +378,23 @@ def parse_netstat_output():
         pid_prog = parts[6] if len(parts) > 6 else "-"
         pid = None
         proc_name = ""
+
+        if pid_prog not in ("-", "0"):
+            pid_str, _, name = pid_prog.partition("/")
+            try:
+                pid = int(pid_str)
+            except ValueError:
+                pid = None
+            proc_name = name or ""
+
+        results.append(
+            {
+                "protocol": proto,
+                "local_address": local,
+                "remote_address": remote,
+                "state": state,
+                "pid": pid,
+                "process_name": proc_name,
+            }
+        )
+

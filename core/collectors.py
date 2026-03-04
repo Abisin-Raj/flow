@@ -433,3 +433,90 @@ def save_connections(data_list):
     4.  Pass to `rare_port_detector`.
     5.  Pass to `evaluate_alert_rules`.
     
+    This runs inside a transaction to ensure data integrity.
+
+    Args:
+        data_list (list): List of connection dicts from parsers.
+    """
+    now = timezone.now()
+
+    for entry in data_list:
+        src_ip, src_port = split_address(entry["local_address"])
+        dst_ip, dst_port = split_address(entry["remote_address"])
+
+        try:
+            ipaddress.ip_address(src_ip)
+            ipaddress.ip_address(dst_ip)
+        except ValueError:
+            # log.debug("Skipping invalid IP pair: %s -> %s", src_ip, dst_ip)
+            continue
+
+        pid = entry.get("pid")
+        process_name = entry.get("process_name") or ""
+        ppid = None
+        if pid:
+            info = get_process_info(pid)
+            if info:
+                ppid = info.get("ppid") or None
+                if not process_name:
+                    process_name = info.get("name") or ""
+
+        # Geolocation lookup
+        try:
+            from core.geolocation import get_geo
+            src_geo = get_geo(src_ip) or {}
+            dst_geo = get_geo(dst_ip) or {}
+        except ImportError:
+            src_geo = {}
+            dst_geo = {}
+
+        conn = Connection.objects.create(
+            src_ip=src_ip,
+            src_port=src_port,
+            dst_ip=dst_ip,
+            dst_port=dst_port,
+            protocol=entry["protocol"],
+            status=entry["state"],
+            pid=pid,
+            ppid=ppid,
+            process_name=process_name,
+            src_country=src_geo.get("country"),
+            src_city=src_geo.get("city"),
+            dst_country=dst_geo.get("country"),
+            dst_city=dst_geo.get("city"),
+        )
+
+        # Check for rare outbound ports
+        if rare_port_handle:
+            try:
+                rare_port_handle(
+                    src_ip=conn.src_ip,
+                    dst_ip=conn.dst_ip,
+                    dst_port=conn.dst_port,
+                    protocol=conn.protocol,
+                )
+            except Exception:
+                log.exception(
+                    "rare-port detector failed for connection id=%s",
+                    getattr(conn, "id", None),
+                )
+
+        try:
+            evaluate_alert_rules(conn, now)
+        except Exception:
+            continue
+
+
+def evaluate_alert_rules(conn: Connection, now):
+    """
+    Check a new connection against various detection rules.
+    
+    Rules checked:
+    1.  High Connection Rate (DOS/spam).
+    2.  Port Scan (many distinct destination ports).
+    3.  SYN Flood (many SYN_SENT states).
+    4.  Sensitive Port Access (connecting to known internal services).
+    5.  Reverse Shell patterns (connecting to known C2 ports).
+
+    Args:
+        conn (Connection): The connection instance to evaluate.

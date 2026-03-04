@@ -93,3 +93,22 @@ class TxSpikeDetector(threading.Thread):
 
         time.sleep(self.interval)
 
+        while self.running:
+            try:
+                self._poll()
+            except Exception:
+                log.exception("TxSpikeDetector: unexpected error in poll")
+            finally:
+                close_old_connections()
+            time.sleep(self.interval)
+
+    def _poll(self):
+        threshold_bytes = _get_threshold_mb() * 1024 * 1024
+        now = time.time()
+
+        for iface in _active_interfaces():
+            current = _read_tx_bytes(iface)
+            if current is None:
+                continue
+
+            prev = self._prev.get(iface)

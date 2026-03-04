@@ -70,3 +70,21 @@ def _scan_proc_udp() -> list[str]:
     Each row: sl local_address rem_address ...
     """
     destinations: list[str] = []
+    try:
+        with open("/proc/net/udp", "r") as fh:
+            for line in fh.readlines()[1:]:
+                parts = line.split()
+                if len(parts) < 3:
+                    continue
+                rem = parts[2]  # remote address hex:hexport
+                if ":" not in rem:
+                    continue
+                rem_ip_hex, rem_port_hex = rem.split(":")
+                try:
+                    rem_port = int(rem_port_hex, 16)
+                except ValueError:
+                    continue
+                if rem_port == 53:
+                    ip = _hex_to_ip(rem_ip_hex)
+                    if ip:
+                        destinations.append(ip)

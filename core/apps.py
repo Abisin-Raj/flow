@@ -53,3 +53,14 @@ def _seed_exploit_staging_watchers():
     Uses get_or_create so existing user-configured entries are never modified.
     """
     import logging
+    import os
+
+    log = logging.getLogger("core.apps")
+
+    STAGING_PATHS = ["/tmp", "/dev/shm"]
+
+    try:
+        from core.models import WatchedFolder
+    except Exception as e:
+        log.warning("_seed_exploit_staging_watchers: cannot import WatchedFolder: %s", e)
+        return

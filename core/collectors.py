@@ -98,3 +98,23 @@ def find_pid_for_connection(src_ip, src_port, dst_ip, dst_port):
 
     # Fallback: scan /proc/net/tcp for local/remote hex tuples then map inode -> pid
     try:
+        def ipport_to_hex(ip, port):
+            import socket
+            packed = socket.inet_aton(ip)
+            hexip = "".join("{:02X}".format(b) for b in packed[::-1])  # little endian
+            hexport = "{:04X}".format(int(port))
+            return hexip, hexport
+
+        lhex, lport = ipport_to_hex(src_ip, src_port)
+        rhex, rport = ipport_to_hex(dst_ip, dst_port)
+
+        with open("/proc/net/tcp", "r") as f:
+            lines = f.readlines()[1:]
+        for ln in lines:
+            parts = ln.split()
+            local, remote = parts[1], parts[2]
+            local_ip, local_p = local.split(":")
+            remote_ip, remote_p = remote.split(":")
+            if local_ip == lhex and local_p == lport and remote_ip == rhex and remote_p == rport:
+                inode = parts[9]
+                # Find pid by inode

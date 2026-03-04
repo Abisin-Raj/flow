@@ -76,3 +76,16 @@ class ServiceControlWidget(QWidget):
             self.chk_alert_watch,
         ]:
             main.addWidget(w)
+
+        button_row = QHBoxLayout()
+        button_row.addStretch()
+        btn_save = make_small_button("Save configuration")
+        btn_save.clicked.connect(self.save_flags)
+        button_row.addWidget(btn_save)
+        button_row.addStretch()
+
+        main.addLayout(button_row)
+
+        note = QLabel(
+            "Note: If you disable a service here, restart the app for it to take effect."
+        )

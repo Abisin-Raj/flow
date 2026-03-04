@@ -61,3 +61,24 @@ class FlowWindow(QMainWindow):
 
         self.alerts_tab = AlertsWidget(self)
         self.tabs.addTab(self.alerts_tab, "Alerts")
+
+        self.response_tab = ResponseWidget(self)
+        self.tabs.addTab(self.response_tab, "Security Operations")
+
+        # Connect alerts selection to response widget
+        self.alerts_tab.alert_selected.connect(self.response_tab.set_alert)
+
+        self.timeline_tab = ThreatTimelineWidget(self)
+        self.tabs.addTab(self.timeline_tab, "Threat Timeline")
+
+        self.top_attackers_tab = TopAttackersWidget(self)
+        self.tabs.addTab(self.top_attackers_tab, "Top Attackers")
+
+        self.file_scan_tab = FileScanWidget(self)
+        self.tabs.addTab(self.file_scan_tab, "File Scanner")
+
+        self.settings_tab = SettingsWidget(self)
+        self.tabs.addTab(self.settings_tab, "Settings")
+
+        self.export_tab = ExportWidget(self)
+        self.tabs.addTab(self.export_tab, "Export")

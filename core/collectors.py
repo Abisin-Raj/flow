@@ -172,3 +172,90 @@ def create_attributed_alert(src_ip, src_port, dst_ip, dst_port, message, severit
         severity (str): Alert severity.
         **kwargs: Extra arguments for `create_alert_for_connection`.
 
+    Returns:
+        Alert or None: Created alert or None if skipped/failed.
+    """
+    try:
+        pid = find_pid_for_connection(src_ip, src_port, dst_ip, dst_port)
+        proc_name = get_proc_name_from_pid(pid) if pid else None
+    except Exception:
+        proc_name = None
+
+    if proc_name and cfg.is_process_ignored_name(proc_name):
+        log.info("Skipping alert for ignored process %s pid=%s", proc_name, pid)
+        return None
+
+    # Import here to avoid circular imports at module import time
+    from core.alert_engine import create_alert_for_connection
+
+    try:
+        return create_alert_for_connection(
+            src_ip=src_ip,
+            dst_ip=dst_ip,
+            dst_port=dst_port,
+            message=message,
+            severity=severity,
+            proc_name=proc_name,
+            **kwargs,
+        )
+    except Exception:
+        log.exception("Failed to create attributed alert for %s:%s -> %s:%s", src_ip, src_port, dst_ip, dst_port)
+        return None
+
+
+
+
+def start_connection_collector():
+    t = threading.Thread(target=connection_collector_loop, daemon=True)
+    t.start()
+
+
+def start_maintenance_thread():
+    """Starts a background thread for periodic maintenance tasks."""
+    t = threading.Thread(target=maintenance_loop, daemon=True)
+    t.start()
+
+
+def maintenance_loop(interval=60):
+    """
+    Loop that runs maintenance tasks every `interval` seconds.
+    """
+    from core.maintenance import run_all_maintenance
+    from django.db import close_old_connections
+
+    while True:
+        try:
+            run_all_maintenance()
+        except Exception as e:
+            log.warning("Maintenance task failed: %s", e)
+        finally:
+            close_old_connections()
+        time.sleep(interval)
+
+def parse_ss_output():
+    """
+    Run: ss -tnp state established
+    Parse output into list of dicts.
+    Superior to netstat as it is modern and standard on Linux.
+    """
+    import re
+    try:
+        # -t: tcp, -u: udp, -w: raw (icmp), -x: unix, -S: sctp, -n: numeric, -p: processes, -a: all
+        cmd = ["ss", "-tunpwS", "-a"]
+        output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)
+    except Exception as e:
+        log.warning("parse_ss_output failed: %s", e)
+        return []
+
+    lines = output.strip().splitlines()
+    results = []
+
+    # Skip header if present
+    start_idx = 0
+    if lines and "Recv-Q" in lines[0]:
+        start_idx = 1
+
+    for line in lines[start_idx:]:
+        parts = line.split()
+        if len(parts) < 4:
+            continue

@@ -678,3 +678,23 @@ def connection_collector_loop(interval=3):
 
     while True:
         try:
+            connection.close()  # Ensure clean state start
+            
+            # Try ss first (best for PIDs and modern Linux)
+            items = parse_ss_output()
+            
+            # Fallback to /proc if ss failed or returned nothing
+            if not items:
+                # Try /proc filesystem (sees all connections including sandboxed apps but lacking PIDs usually)
+                items = parse_proc_net()
+            
+            # If /proc also returns no or very few connections, fall back to netstat
+            if (not items or len(items) < 3) and not items:
+                # log.info("Few/no connections, trying netstat fallback")
+                items = parse_netstat_output()
+            
+            if items:
+                save_connections(items)
+            
+            # success reset
+            consecutive_db_errors = 0

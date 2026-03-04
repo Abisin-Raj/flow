@@ -58,3 +58,15 @@ class ServiceControlWidget(QWidget):
 
         self.chk_folder = QCheckBox("Enable folder watcher (file quarantine)")
         self.chk_folder.setChecked(flags.get("folder_watcher", True))
+
+        self.chk_sniffer = QCheckBox("Enable packet sniffer (raw sockets)")
+        self.chk_sniffer.setChecked(flags.get("sniffer", True))
+
+        self.chk_light = QCheckBox("Enable light sniffer (/proc/net/tcp)")
+        self.chk_light.setChecked(flags.get("light_sniffer", True))
+
+        self.chk_alert_watch = QCheckBox("Enable alert watcher (tray notifications)")
+        self.chk_alert_watch.setChecked(flags.get("alert_watcher", True))
+
+        for w in [
+            self.chk_collectors,

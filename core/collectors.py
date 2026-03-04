@@ -698,3 +698,23 @@ def connection_collector_loop(interval=3):
             
             # success reset
             consecutive_db_errors = 0
+            backoff = 1
+            time.sleep(interval)
+
+        except DatabaseError as e:
+            log.warning("DB error in collectors: %s", e)
+            consecutive_db_errors += 1
+            if consecutive_db_errors >= DB_ERROR_THRESHOLD:
+                log.error("Too many DB errors, pausing collectors for %s seconds", max_backoff)
+                time.sleep(max_backoff)
+                consecutive_db_errors = 0
+                backoff = 1
+            else:
+                time.sleep(backoff)
+                backoff = min(backoff * 2, max_backoff)
+
+        except Exception as e:
+            log.warning("Unexpected error in connection_collector_loop: %s", e)
+            time.sleep(interval)
+        finally:
+            close_old_connections()

@@ -298,3 +298,23 @@ def parse_ss_output():
             # Indices based on column presence
             if first_col_is_state:
                  # [State, RecvQ, SendQ, Local, Peer, Process...]
+                 local_idx = 3
+                 remote_idx = 4
+            else:
+                 # [RecvQ, SendQ, Local, Peer, Process...]
+                 local_idx = 2
+                 remote_idx = 3
+             
+        if len(parts) <= remote_idx:
+             continue
+
+        try:
+            local = parts[local_idx]
+            remote = parts[remote_idx]
+            
+            # Use regex to find PID info which might be anywhere in the line
+            # Format: users:(("name",pid=123,fd=4))
+            pid = None
+            proc_name = ""
+            
+            if "users:" in line:

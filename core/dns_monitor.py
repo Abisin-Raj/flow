@@ -34,3 +34,21 @@ _BLOCKED_DNS_IPS: set[str] = {
     "185.220.101.1",
     "185.220.101.2",
     "185.220.101.3",
+    # Cobalt Strike / Metasploit default team-server ranges seen in wild
+    "104.21.0.1",
+    "172.67.0.1",
+    # Emotet / Trickbot DNS beaconing IPs (historic, often recycled)
+    "89.248.165.61",
+    "194.165.16.11",
+    "92.63.197.48",
+    # njRAT / DarkComet default resolvers
+    "213.159.216.1",
+    "46.246.86.3",
+    # Generic malware C2 resolvers seen in honeypot captures
+    "5.9.188.148",
+    "185.100.87.41",
+}
+
+# Cooldown: avoid re-alerting for the same destination within this window (s)
+_COOLDOWN = 300
+_alerted: dict[str, float] = {}

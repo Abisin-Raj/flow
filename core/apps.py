@@ -16,3 +16,12 @@ class CoreConfig(AppConfig):
                     cur.execute("PRAGMA foreign_keys=ON;")
         except Exception:
             pass
+
+        # Avoid running during migrations or if not root (will log warning)
+        try:
+            from . import firewall
+            firewall.ensure_table()
+            firewall.ensure_chain()
+            firewall.ensure_set()
+            # Defer reconciliation to avoid DB access during app init
+            # This runs 2 seconds after startup, when apps are fully loaded

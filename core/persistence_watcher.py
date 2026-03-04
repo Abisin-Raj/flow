@@ -93,3 +93,22 @@ class PersistenceWatcher(threading.Thread):
     Background thread that baselines and monitors cron/systemd persistence
     paths for attacker-installed backdoors.
     """
+
+    def __init__(self, interval: int = _POLL_INTERVAL):
+        super().__init__(daemon=True, name="PersistenceWatcher")
+        self.interval = interval
+        self.running = True
+        self._baseline: dict[str, str] | None = None
+        self._watch_paths = _default_watch_paths()
+
+    def run(self):
+        log.info(
+            "PersistenceWatcher started — monitoring %d paths",
+            len(self._watch_paths),
+        )
+        while self.running:
+            try:
+                self._poll()
+            except Exception:
+                log.exception("PersistenceWatcher: unexpected error in poll")
+            finally:

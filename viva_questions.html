@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flow EDR Project - Viva Questions and Answers</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 16mm;
+        }
+
+        :root {
+            --text: #1a1a1a;
+            --muted: #4a4a4a;
+            --accent: #0b5fff;
+            --border: #d9d9d9;
+            --bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+            color: var(--text);
+            background: #f3f5f8;
+            line-height: 1.4;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 12px auto;
+            background: var(--bg);
+            padding: 16mm;
+            border: 1px solid var(--border);
+        }
+
+        h1 {
+            margin: 0 0 6px;
+            font-size: 21px;
+            color: var(--accent);
+            text-align: center;
+        }
+
+        .subtitle {
+            margin: 0 0 20px;
+            font-size: 13px;
+            color: var(--muted);
+            text-align: center;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 10px;
+        }
+
+        .qa {
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #e4e7ec;
+            break-inside: avoid;
+        }
+
+        .q {
+            margin: 0 0 4px;
+            font-weight: 700;
+            font-size: 13.5px;
+            color: #0b5fff;
+        }
+
+        .a {
+            margin: 0;
+            font-size: 12.5px;
+            color: #222;
+        }
+
+        .section-title {
+            font-size: 16px;
+            color: #111;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            background: #eee;
+            padding: 5px 10px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .footer-note {
+            margin-top: 14px;
+            font-size: 11px;
+            color: #666;
+            border-top: 1px solid var(--border);
+            padding-top: 8px;
+            text-align: center;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+            }
+
+            .page {
+                margin: 0;
+                border: none;
+                width: auto;
+                min-height: auto;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="page">
+        <h1>50 Viva Questions & Answers on Flow EDR</h1>
+        <p class="subtitle">Comprehensive Technical Defense Document for the Flow Project</p>
+
+        <div class="section-title">Part 1: Architecture & Project Overview</div>
+
+        <section class="qa">
+            <p class="q">1) What is the Flow EDR project?</p>
+            <p class="a">Flow is a comprehensive Endpoint Detection and Response system built in Python, utilizing a
+                Django backend for core security logic and database management, paired with a PyQt5 graphical desktop
+                frontend.</p>
+        </section>
+        <section class="qa">
+            <p class="q">2) What are the main components of Flow?</p>
+            <p class="a">It consists of a Desktop UI, a Django core backend, a packet sniffer, a static file scanner, a
+                firewall auto-mitigator, and local threat intelligence databases.</p>
+        </section>
+        <section class="qa">
+            <p class="q">3) Why did you choose Python for this project?</p>
+            <p class="a">Python offers rapid development and a vast ecosystem for network and security tools (like Scapy
+                for sniffing), easily bridged with robust frameworks like Django (backend) and PyQt5 (frontend).</p>
+        </section>
+        <section class="qa">
+            <p class="q">4) How does the frontend communicate with the backend?</p>
+            <p class="a">The PyQt5 frontend imports Django models directly and queries the local database running on the
+                host machine. It operates completely locally without relying on REST APIs over HTTP.</p>
+        </section>
+        <section class="qa">
+            <p class="q">5) What is the specific role of Django in this architecture?</p>
+            <p class="a">Django serves as the Object-Relational Mapper (ORM), securely managing the database schema for
+                alerts, connections, and settings, while providing utility structures and an admin interface.</p>
+        </section>
+        <section class="qa">
+            <p class="q">6) Why use PostgreSQL instead of SQLite for this project?</p>
+            <p class="a">PostgreSQL handles concurrent high-volume inserts (like thousands of packets from the sniffer)
+                far better than SQLite, which locks the entire database file during write operations.</p>
+        </section>
+        <section class="qa">
+            <p class="q">7) Does the application use any external cloud APIs for threat detection?</p>
+            <p class="a">No, Flow is designed to be fully self-contained and offline. It uses bundled JSON and binary
+                databases locally to ensure data privacy and zero network latency during incident detection.</p>
+        </section>
+        <section class="qa">
+            <p class="q">8) How is database concurrency managed between the UI and backend background services?</p>
+            <p class="a">PostgreSQL inherently handles connection concurrency cleanly. Additionally, the backend uses a
+                local, TTL-based thread-safe cache (`settings_api`) to keep database trips to a minimum for frequently
+                accessed settings.</p>
+        </section>
+        <section class="qa">
+            <p class="q">9) What are "AppSettings" in the Django model?</p>
+            <p class="a">They are a simple Key-Value store table in the database used to persist configuration states
+                (like detector sensitivity or service toggles) across computer restarts.</p>
+        </section>
+        <section class="qa">
+            <p class="q">10) What role do Django signals play in Flow?</p>
+            <p class="a">We use `signals.py` to attach listeners to model `post_save` events. This allows decoupled code
+                to react instantly when a new malicious alert triggers, prompting the UI or the auto-mitigator.</p>
+        </section>
+
+        <div class="section-title">Part 2: Network Monitoring & Threat Detection</div>
+
+        <section class="qa">
+            <p class="q">11) How does Flow perform network packet sniffing?</p>
+            <p class="a">It utilizes the Scapy library and native Python sockets to intercept raw network traffic
+                directly on the host's networking interface in the background.</p>
+        </section>
+        <section class="qa">
+            <p class="q">12) What is the difference between the `packet_sniffer` and `light_sniffer` modules?</p>
+            <p class="a">The packet sniffer performs deep packet inspection and detailed parsing. The light sniffer
+                sacrifices deep inspection to focus purely on high-speed flow metrics and metadata extraction.</p>
+        </section>
+        <section class="qa">
+            <p class="q">13) How are reverse shells detected in Flow?</p>
+            <p class="a">By analyzing connection patterns, checking connections initiated toward suspicious external
+                ports, and correlating those network flows with host-level process anomaly metrics.</p>
+        </section>
+        <section class="qa">
+            <p class="q">14) Explain how Flow detects ARP spoofing attacks.</p>
+            <p class="a">The `arp_mitm_detector` monitors ARP replies on the local network. It detects inconsistencies
+                by recognizing when a MAC address abruptly changes its mapping for a known critical IP, such as the
+                gateway router.</p>
+        </section>
+        <section class="qa">
+            <p class="q">15) How is port scanning identified by the module?</p>
+            <p class="a">The system tracks the number of distinct destination ports a single source IP attempts to touch
+                within a configured short time window (e.g., 20 ports in 10 seconds).</p>
+        </section>
+        <section class="qa">
+            <p class="q">16) What is the role of the `tx_spike_detector.py`?</p>
+            <p class="a">It monitors outbound (transmit) traffic volumes and logs alerts for sudden, massive spikes in
+                data transfer, which is a strong indicator of unauthorized data exfiltration.</p>
+        </section>
+        <section class="qa">
+            <p class="q">17) How does the system map network connections to local processes?</p>
+            <p class="a">It uses the `proc_net_parser.py` module to parse Linux `/proc/net/tcp` and `/udp` structures,
+                mapping socket inodes to local process IDs (PIDs) incredibly fast without heavy utilities like
+                `netstat`.</p>
+        </section>
+        <section class="qa">
+            <p class="q">18) How are DNS queries monitored?</p>
+            <p class="a">The DNS monitor grabs traffic destined for port 53, extracts the domain payload from the DNS
+                request, and evaluates the domain name against the local reputation database.</p>
+        </section>
+        <section class="qa">
+            <p class="q">19) What threat intelligence databases are used locally?</p>
+            <p class="a">Flow packages static JSON feeds (`malware_db.json`, `reputation.json`) to silently check file
+                hashes and IPs without leaking data to external APIs.</p>
+        </section>
+        <section class="qa">
+            <p class="q">20) How does the local IP reputation system work?</p>
+            <p class="a">Every inbound and outbound IP is passively checked against the internal `reputation.json`. If
+                an IP matches a known malicious node, a high-severity alert triggers immediately.</p>
+        </section>
+        <section class="qa">
+            <p class="q">21) Provide an example of how Flow identifies a suspicious port.</p>
+            <p class="a">Configurations contain lists of notoriously abused ports (e.g., 4444, 5555, 1337). The
+                `rare_port_detector` raises an alert if an outbound connection targets one of these ports anomalously.
+            </p>
+        </section>
+        <section class="qa">
+            <p class="q">22) What are the common challenges of raw packet sniffing in Python?</p>
+            <p class="a">Python’s Global Interpreter Lock (GIL) and general execution speed limit throughput. To
+                compensate, BPF (Berkeley Packet Filter) syntax is applied at the OS level to drop irrelevant traffic
+                before it reaches Python.</p>
+        </section>
+
+        <div class="section-title">Part 3: File Scanning & System Monitoring</div>
+
+        <section class="qa">
+            <p class="q">23) How does the `file_scanner` module detect malware?</p>
+            <p class="a">It cryptographically hashes files (e.g., MD5, SHA256) upon creation or periodically and checks
+                if those hashes exist in the `malware_hash_feed.json` indicator list.</p>
+        </section>
+        <section class="qa">
+            <p class="q">24) What is TLSH and why is it used in file scanning?</p>
+            <p class="a">Trend Micro Locality Sensitive Hash (TLSH) is a fuzzy hashing technique. It allows Flow to
+                detect slight variations of known malware that have been mutated just enough to bypass exact
+                cryptographic matching.</p>
+        </section>
+        <section class="qa">
+            <p class="q">25) Explain the difference between Quarantine and Deletion in the context of Flow.</p>
+            <p class="a">Quarantine safely isolates a suspicious file by moving it to a non-executable directory and
+                stripping its execution permissions for forensic preservation. Deletion completely wipes the file,
+                losing potential evidence.</p>
+        </section>
+        <section class="qa">
+            <p class="q">26) Describe the `folder_watcher.py` mechanism.</p>
+            <p class="a">It relies on file system event monitoring (such as `inotify` on Linux) to detect unauthorized
+                file creations or modifications within explicitly protected directories in real time.</p>
+        </section>
+        <section class="qa">
+            <p class="q">27) What does the `persistence_watcher.py` look for?</p>
+            <p class="a">It monitors modifications in critical startup scripts, `cron` jobs, or systemd services to
+                catch malware intending to persistently run after a system reboot.</p>
+        </section>
+        <section class="qa">
+            <p class="q">28) How does Flow ensure it doesn't overburden the host CPU?</p>
+            <p class="a">The deep scanners make use of optimized asynchronous queues. Furthermore, system utilization is
+                actively constrained and monitored via the `collectors.py` and `metrics.py` resources managers.</p>
+        </section>
+
+        <div class="section-title">Part 4: Mitigation & Contextualization</div>
+
+        <section class="qa">
+            <p class="q">29) How does Flow automatically mitigate threats?</p>
+            <p class="a">When alerts reach a critical severity threshold, the `auto_mitigator` works with the `firewall`
+                module to dynamically inject DROP rules for the offending IP into the OS firewall (`iptables` or `ufw`).
+            </p>
+        </section>
+        <section class="qa">
+            <p class="q">30) What is a "dry run" mode in the firewall settings?</p>
+            <p class="a">Enabling this mode causes Flow to log the blocking decisions it *would* make to the database
+                without actually writing active blocking rules to the OS firewall, ensuring safety during testing.</p>
+        </section>
+        <section class="qa">
+            <p class="q">31) What is the purpose of the `block_policy.py` and `unblock_policy.py`?</p>
+            <p class="a">They codify the rules dictating which IPs get banned, track the ban duration, and handle the
+                mechanics of automatically revoking the ban when the penalty time expires.</p>
+        </section>
+        <section class="qa">
+            <p class="q">32) How are safe IPs protected from being blocked by the mitigator?</p>
+            <p class="a">The `protected_ips.py` maintains hardcoded and user-defined allow-lists, and the settings API
+                verifies if an IP belongs to a private subnet, bypassing auto-mitigation logic for trusted sources.</p>
+        </section>
+        <section class="qa">
+            <p class="q">33) What happens during an automated unblock?</p>
+            <p class="a">A scheduled maintenance loop identifies expired `BlockedIP` records in the database, sends a
+                command to `iptables` to remove the matching rule, and then deletes the database record to restore
+                connectivity.</p>
+        </section>
+        <section class="qa">
+            <p class="q">34) How is geolocation handled completely offline?</p>
+            <p class="a">By utilizing the MaxMind `GeoLite2-City.mmdb` binary database file. The Python library queries
+                this highly optimized local binary to map IP addresses to geographic metadata instantly.</p>
+        </section>
+        <section class="qa">
+            <p class="q">35) Why do we need geolocation for IP addresses in an EDR?</p>
+            <p class="a">Adding location context assists analysts in quickly spotting anomalies like impossible travel
+                distances, outbound connections to notoriously hostile foreign regions, or targeted geography-based
+                infiltration.</p>
+        </section>
+        <section class="qa">
+            <p class="q">36) How does Flow handle high rates of repeated alerts?</p>
+            <p class="a">It uses a cooldown logic variable (`detector.cooldown_seconds`) within the `alert_engine`.
+                Subsequent identical events inside this time window are logically grouped or suppressed to prevent UI
+                alert fatigue.</p>
+        </section>
+        <section class="qa">
+            <p class="q">37) What is `alert_explain.py` for?</p>
+            <p class="a">It leverages algorithmic or heuristic text generation to create natural language, plain-English
+                explanations for complex alerts, significantly accelerating triage for junior security analysts.</p>
+        </section>
+        <section class="qa">
+            <p class="q">38) In the context of Flow, what is the meaning of a "Severity" score?</p>
+            <p class="a">Severity is a normalized qualitative metric (usually 1 to 5 or Low to Critical) assigned to
+                alerts based on impact context, allowing defensive automation to surgically trigger only on the most
+                critical issues.</p>
+        </section>
+        <section class="qa">
+            <p class="q">39) How can the user adjust detector sensitivity?</p>
+            <p class="a">Through the desktop UI Settings tab, which invokes `settings_api.py` to seamlessly modify
+                dynamic thresholds like `brute_window` sizes or `tx_spike_threshold_mb` on the fly.</p>
+        </section>
+
+        <div class="section-title">Part 5: UI, Desktop Integration, & Lifecycle</div>
+
+        <section class="qa">
+            <p class="q">40) How does the UI visually represent alerts?</p>
+            <p class="a">The `alerts_widget` provides an interactive tabular grid, while the `dashboard_graphs_widget`
+                translates statistical trends into readable bar charts and severity tracking timelines.</p>
+        </section>
+        <section class="qa">
+            <p class="q">41) What does the `top_attackers_widget` do?</p>
+            <p class="a">It cross-examines recent blocked connections and alerts to graphically display the top ten most
+                frequent offending IP addresses aggressively hammering the endpoint.</p>
+        </section>
+        <section class="qa">
+            <p class="q">42) How does Flow provide system-level OS notifications?</p>
+            <p class="a">The `notification_manager` pushes native desktop alerts (like Linux DBUS notifications)
+                directly to the user environment, avoiding the need for the user to keep the Flow dashboard visibly
+                open.</p>
+        </section>
+        <section class="qa">
+            <p class="q">43) Explain the role of `alert_watcher.py` in the frontend.</p>
+            <p class="a">It instantiates a QThread background process that asynchronously polls the Django database for
+                newly inserted alerts, updating the UI dynamically without locking the main frontend render thread.</p>
+        </section>
+        <section class="qa">
+            <p class="q">44) What is the purpose of `export_service.py`?</p>
+            <p class="a">It retrieves thousands of database records (Connections or Alerts) and cleanly maps them into
+                sanitized CSV files within the user's home folder for subsequent external reporting or graphing tools.
+            </p>
+        </section>
+        <section class="qa">
+            <p class="q">45) What command-line automated setups are provided in the `scripts` directory?</p>
+            <p class="a">Installation bash scripts (e.g., `setup_postgres.sh`, `fix_postgres_auth.sh`) entirely automate
+                the heavy lifting of provisioning the database environment, handling system permissions natively.</p>
+        </section>
+        <section class="qa">
+            <p class="q">46) Why export the application as Debian/RPM tracking packages (`packaging/` tab)?</p>
+            <p class="a">Providing a compiled specification `.spec` and `.service` files enables seamless enterprise
+                rollout. It allows Linux operating systems to natively track the software dependencies and boot Flow
+                sequentially as an OS daemon.</p>
+        </section>
+        <section class="qa">
+            <p class="q">47) How is the desktop UI aesthetically styled?</p>
+            <p class="a">It leverages PyQt's integrated stylesheet engine (QSS), mapped heavily in `ui_helpers.py`,
+                allowing us to assign sleek dark-mode, futuristic palettes consistent with modern security posture
+                tools.</p>
+        </section>
+        <section class="qa">
+            <p class="q">48) What purpose does `cleanup.py` and management commands like `cleanup_old_data` serve?</p>
+            <p class="a">Endpoints deal with vast telemetry metrics. These cron-triggered functions continually prune
+                connection logs and harmless records older than a dynamic `retention.days` threshold to prevent disk
+                exhaustion.</p>
+        </section>
+        <section class="qa">
+            <p class="q">49) How does Flow handle the identification of a host's own Local IP address dynamically?</p>
+            <p class="a">The local network interface API logic binds a phantom UDP socket briefly to standard external
+                route (e.g. 8.8.8.8) simply to query the OS routing table on which internal Interface/IP it preferred.
+            </p>
+        </section>
+        <section class="qa">
+            <p class="q">50) If you were to scale Flow, what would be the next architectural evolution?</p>
+            <p class="a">Introducing architectural distribution: decoupling the local PostgreSQL structure to ship raw
+                metrics into a centralized SIEM server (like ELK/Splunk), allowing a single SOC interface to monitor
+                fleets of Flow agents network-wide.</p>
+        </section>
+
+        <p class="footer-note">End of document. Prepared for Project Flow Defense & Viva Voce.</p>
+    </main>
+</body>
+
+</html>
